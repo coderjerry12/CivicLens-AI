@@ -81,7 +81,7 @@ export function Navbar({ onMenuToggle, className }: NavbarProps) {
         <button
           className="ml-2 flex items-center gap-2 rounded-[14px] p-1.5 hover:bg-neutral-100 transition-colors duration-200"
           aria-label="User menu"
-          onClick={() => navigate('/app/settings')}
+          onClick={() => navigate('/app/profile')}
         >
           <Avatar
             fallback={user?.displayName || 'U'}

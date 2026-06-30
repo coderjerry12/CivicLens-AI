@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { getGeminiResponse } from '@/services/geminiAssistantService';
 import { useAuth } from '@/features/auth';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 import type { AssistantMessage } from '@/services/aiAssistantService';
 
 /**
@@ -8,6 +9,7 @@ import type { AssistantMessage } from '@/services/aiAssistantService';
  */
 export function useAIAssistant() {
   const { user } = useAuth();
+  const { stats } = useDashboardStats();
   const [messages, setMessages] = useState<AssistantMessage[]>([
     { id: '0', role: 'assistant', content: `Hi ${user?.displayName?.split(' ')[0] || 'there'}! I'm your CivicLens AI assistant. How can I help you today?`, timestamp: new Date() },
   ]);
@@ -22,8 +24,8 @@ export function useAIAssistant() {
     try {
       const response = await getGeminiResponse(content, {
         role: user?.role || 'citizen',
-        issueCount: 0,
-        pendingCount: 0,
+        issueCount: stats?.totalReports || 0,
+        pendingCount: stats?.pending || 0,
         userName: user?.displayName || 'User',
       });
 
@@ -43,7 +45,7 @@ export function useAIAssistant() {
       }]);
     }
     setIsTyping(false);
-  }, [user]);
+  }, [user, stats]);
 
   const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
   const close = useCallback(() => setIsOpen(false), []);
