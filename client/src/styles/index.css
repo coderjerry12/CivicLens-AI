@@ -1,0 +1,57 @@
+/* Leaflet Map Styles */
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * CivicLens AI — Global Styles
+ * Design tokens are defined in tailwind.config.js
+ * Use Tailwind utilities everywhere. Never hardcode colors.
+ */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-text-primary font-sans leading-relaxed;
+  }
+}
+
+/* CSS Variables — Light Mode (default) */
+:root {
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-hover: #cbd5e1;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+}
+
+/* CSS Variables — Dark Mode */
+.dark {
+  --color-background: #0f1117;
+  --color-surface: #1a1d27;
+  --color-surface-hover: #242832;
+  --color-border: #2e3340;
+  --color-border-hover: #3d4354;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #a1aab8;
+  --color-text-muted: #6b7a8d;
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20;
+  }
+}
