@@ -73,11 +73,11 @@ export default function NotificationsPage() {
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={cn('text-sm', notif.read ? 'text-neutral-700 dark:text-neutral-300' : 'font-semibold text-neutral-900 dark:text-white')}>
+                  <p className={cn('text-sm', notif.read ? 'text-neutral-600 dark:text-neutral-600' : 'font-semibold text-neutral-900 dark:text-neutral-900')}>
                     {notif.title}
                   </p>
-                  <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 truncate">{notif.message}</p>
-                  <p className="text-[10px] text-neutral-500 dark:text-neutral-500 mt-1">{formatRelativeTime(notif.createdAt)}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-0.5 truncate">{notif.message}</p>
+                  <p className="text-[10px] text-neutral-400 dark:text-neutral-400 mt-1">{formatRelativeTime(notif.createdAt)}</p>
                 </div>
                 {!notif.read && <div className="h-2 w-2 rounded-full bg-primary-500 shrink-0 mt-2" />}
               </div>
