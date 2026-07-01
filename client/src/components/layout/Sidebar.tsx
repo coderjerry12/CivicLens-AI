@@ -14,6 +14,7 @@ import {
   Target,
   Brain,
   Gift,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { APP_NAME } from '@/lib/constants';
@@ -36,6 +37,7 @@ const iconMap: Record<string, React.ElementType> = {
   Target,
   Brain,
   Gift,
+  Users,
 };
 
 interface NavItem {
@@ -48,7 +50,7 @@ const citizenNav: NavItem[] = [
   { label: 'Dashboard', path: '/app/dashboard', icon: 'LayoutDashboard' },
   { label: 'Report Issue', path: '/app/issues/new', icon: 'PlusCircle' },
   { label: 'My Issues', path: '/app/issues', icon: 'ClipboardList' },
-  { label: 'Community', path: '/app/community', icon: 'Map' },
+  { label: 'Community', path: '/app/community', icon: 'Users' },
   { label: 'Map', path: '/app/map', icon: 'Map' },
   { label: 'Leaderboard', path: '/app/leaderboard', icon: 'Trophy' },
   { label: 'Challenges', path: '/app/challenges', icon: 'Target' },
