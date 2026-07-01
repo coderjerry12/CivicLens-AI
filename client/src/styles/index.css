@@ -47,11 +47,37 @@
   --color-border-hover: #3a4258;
   --color-text-primary: #0f172a;
   --color-text-secondary: #475569;
-  --color-text-muted: #94a3b8;
+  --color-text-muted: #64748b;
 }
 
 @layer utilities {
   .glass {
     @apply bg-white/80 backdrop-blur-xl border border-white/20;
   }
+}
+
+/* Dark mode: ensure text is light inside dark cards */
+@layer base {
+  .dark [class*="bg-surface"],
+  .dark [class*="bg-\\[\\#141824\\]"],
+  .dark [class*="dark\\:bg-\\[\\#141824\\]"] {
+    color: #f1f5f9;
+  }
+}
+
+/* Dark mode form elements inside cards */
+.dark input,
+.dark select,
+.dark textarea {
+  color: #f1f5f9 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+.dark option {
+  background-color: #1e293b;
+  color: #f1f5f9;
 }
