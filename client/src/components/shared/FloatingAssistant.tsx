@@ -3,6 +3,13 @@ import { MessageCircle, X, Send, Sparkles } from 'lucide-react';
 import { useAIAssistant } from '@/hooks/useAIAssistant';
 import { cn } from '@/lib/utils';
 
+const QUICK_SUGGESTIONS = [
+  'How many issues have I reported?',
+  'What categories can I report?',
+  'How to track my issue?',
+  'What is my community impact?',
+];
+
 export function FloatingAssistant() {
   const { messages, isOpen, isTyping, sendMessage, toggle, close } = useAIAssistant();
   const [input, setInput] = useState('');
@@ -12,9 +19,10 @@ export function FloatingAssistant() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    sendMessage(input.trim());
+  const handleSend = (text?: string) => {
+    const msg = text || input.trim();
+    if (!msg) return;
+    sendMessage(msg);
     setInput('');
   };
 
@@ -22,28 +30,38 @@ export function FloatingAssistant() {
     <>
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-20 right-4 z-[100] w-80 sm:w-96 rounded-[20px] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 shadow-2xl animate-scale-in overflow-hidden">
+        <div className="fixed bottom-20 right-4 z-[100] w-[340px] sm:w-[380px] rounded-[20px] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 shadow-2xl animate-scale-in overflow-hidden flex flex-col" style={{ height: '520px' }}>
           {/* Header */}
-          <div className="flex items-center justify-between bg-primary-600 dark:bg-primary-700 px-4 py-3 text-white">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              <span className="text-sm font-semibold">CivicLens AI</span>
-              <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded">Gemini</span>
+          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50">
+            <div className="relative">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-500/20 border-2 border-primary-200 dark:border-primary-500/30">
+                <Sparkles className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+              </div>
+              <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-success-500 border-2 border-white dark:border-neutral-900" />
             </div>
-            <button onClick={close} className="hover:bg-white/20 rounded-full p-1 transition-colors">
-              <X className="h-4 w-4" />
+            <div className="flex-1">
+              <h3 className="text-sm font-bold text-neutral-900 dark:text-white">CivicLens Assistant</h3>
+              <p className="text-[11px] text-success-600 dark:text-success-400">Online • Gemini Connected</p>
+            </div>
+            <button onClick={close} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors">
+              <X className="h-4 w-4 text-neutral-500" />
             </button>
           </div>
 
           {/* Messages */}
-          <div className="h-72 overflow-y-auto p-3 space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-neutral-50/50 dark:bg-neutral-950/30">
             {messages.map((msg) => (
               <div key={msg.id} className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+                {msg.role === 'assistant' && (
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-500/20 mr-2 mt-1">
+                    <Sparkles className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
+                  </div>
+                )}
                 <div className={cn(
-                  'max-w-[80%] rounded-[14px] px-3 py-2 text-xs leading-relaxed',
+                  'max-w-[75%] rounded-[16px] px-3.5 py-2.5 text-[13px] leading-relaxed',
                   msg.role === 'user'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200'
+                    ? 'bg-primary-600 text-white rounded-br-sm'
+                    : 'bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 shadow-sm rounded-bl-sm'
                 )}>
                   {msg.content}
                 </div>
@@ -51,11 +69,14 @@ export function FloatingAssistant() {
             ))}
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-neutral-100 dark:bg-neutral-800 rounded-[14px] px-3 py-2 text-xs text-neutral-500">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-500/20 mr-2">
+                  <Sparkles className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
+                </div>
+                <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-[16px] rounded-bl-sm px-4 py-3 shadow-sm">
                   <span className="inline-flex gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="w-2 h-2 rounded-full bg-primary-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 rounded-full bg-primary-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 rounded-full bg-primary-400 animate-bounce" style={{ animationDelay: '300ms' }} />
                   </span>
                 </div>
               </div>
@@ -63,37 +84,64 @@ export function FloatingAssistant() {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Quick Suggestions */}
+          {messages.length <= 2 && !isTyping && (
+            <div className="px-3 py-2 border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {QUICK_SUGGESTIONS.map((suggestion, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSend(suggestion)}
+                    className="shrink-0 text-[11px] px-3 py-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-primary-500/10 hover:border-primary-300 dark:hover:border-primary-500/30 hover:text-primary-700 dark:hover:text-primary-400 transition-all whitespace-nowrap"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Input */}
-          <div className="border-t border-neutral-200 dark:border-neutral-700 p-3">
-            <div className="flex gap-2">
+          <div className="px-3 py-3 border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+            <div className="flex gap-2 items-center">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !isTyping && handleSend()}
-                placeholder="Ask me anything..."
-                className="flex-1 h-9 rounded-[10px] border border-border dark:border-neutral-700 bg-surface dark:bg-neutral-800 text-text-primary dark:text-neutral-200 px-3 text-xs placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="Ask CivicLens AI..."
+                className="flex-1 h-10 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-text-primary dark:text-neutral-200 px-4 text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 disabled={isTyping}
               />
               <button
-                onClick={handleSend}
+                onClick={() => handleSend()}
                 disabled={!input.trim() || isTyping}
-                className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-primary-600 text-white hover:bg-primary-500 disabled:opacity-50 transition-colors"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-600 text-white hover:bg-primary-500 disabled:opacity-40 transition-all shadow-md shadow-primary-600/20"
               >
-                <Send className="h-3.5 w-3.5" />
+                <Send className="h-4 w-4" />
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* FAB */}
+      {/* FAB Button */}
       <button
         onClick={toggle}
-        className="fixed bottom-4 right-4 z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg shadow-primary-600/30 hover:bg-primary-500 hover:scale-105 transition-all duration-200"
+        className={cn(
+          'fixed bottom-4 right-4 z-[100] flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all duration-300',
+          isOpen
+            ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600'
+            : 'bg-primary-600 text-white hover:bg-primary-500 hover:scale-110 shadow-primary-600/30'
+        )}
         aria-label="AI Assistant"
       >
-        {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+        {isOpen ? <X className="h-6 w-6" /> : (
+          <div className="relative">
+            <MessageCircle className="h-6 w-6" />
+            <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-success-500 border-2 border-primary-600 animate-pulse" />
+          </div>
+        )}
       </button>
     </>
   );
