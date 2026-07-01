@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Sparkles } from 'lucide-react';
+import { X, Send, Sparkles } from 'lucide-react';
 import { useAIAssistant } from '@/hooks/useAIAssistant';
 import { cn } from '@/lib/utils';
 
@@ -129,17 +129,29 @@ export function FloatingAssistant() {
       <button
         onClick={toggle}
         className={cn(
-          'fixed bottom-4 right-4 z-[100] flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all duration-300',
+          'fixed bottom-4 right-4 z-[100] flex h-16 w-16 items-center justify-center rounded-full shadow-lg transition-all duration-300',
           isOpen
             ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600'
-            : 'bg-primary-600 text-white hover:bg-primary-500 hover:scale-110 shadow-primary-600/30'
+            : 'bg-white dark:bg-neutral-800 hover:scale-110 shadow-xl border-[3px] border-primary-500'
         )}
         aria-label="AI Assistant"
       >
         {isOpen ? <X className="h-6 w-6" /> : (
           <div className="relative">
-            <MessageCircle className="h-6 w-6" />
-            <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-success-500 border-2 border-primary-600 animate-pulse" />
+            {/* Custom bot face */}
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Head (diamond shape) */}
+              <rect x="8" y="10" width="16" height="16" rx="3" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.5" transform="rotate(0 16 18)" />
+              {/* Hat */}
+              <ellipse cx="16" cy="10" rx="8" ry="3" fill="#1e293b" />
+              <circle cx="16" cy="8" r="2" fill="#f59e0b" />
+              {/* Eyes */}
+              <circle cx="12" cy="18" r="2.5" fill="#2563eb" />
+              <circle cx="20" cy="18" r="2.5" fill="#2563eb" />
+              {/* Nose/Mouth */}
+              <polygon points="16,21 14,24 18,24" fill="#f59e0b" />
+            </svg>
+            <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-success-500 border-2 border-white dark:border-neutral-800 animate-pulse" />
           </div>
         )}
       </button>
