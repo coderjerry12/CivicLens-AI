@@ -145,15 +145,29 @@ export default function ProfilePage() {
         </Card>
       </div>
 
-      {/* Activity Calendar */}
+      {/* Contribution Matrix */}
       <Card>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-secondary-500" />
-          Activity Calendar
-          <span className="text-xs text-neutral-400 ml-auto">Last 90 days</span>
+        <CardTitle className="flex items-center justify-between">
+          <div>
+            <span className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-secondary-500" />
+              Contribution Matrix
+            </span>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-normal mt-1">
+              {Object.values(activityMap).reduce((a, b) => a + b, 0)} reported issues in the last year
+            </p>
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-neutral-500 dark:text-neutral-400">
+            <span>Less</span>
+            <div className="h-3 w-3 rounded-sm bg-neutral-200 dark:bg-neutral-700" />
+            <div className="h-3 w-3 rounded-sm bg-emerald-200 dark:bg-emerald-800" />
+            <div className="h-3 w-3 rounded-sm bg-emerald-400 dark:bg-emerald-600" />
+            <div className="h-3 w-3 rounded-sm bg-emerald-600 dark:bg-emerald-400" />
+            <span>More</span>
+          </div>
         </CardTitle>
         <CardContent className="mt-4">
-          <ActivityHeatmap activityMap={activityMap} />
+          <ContributionMatrix activityMap={activityMap} reports={reports} />
         </CardContent>
       </Card>
 
@@ -205,33 +219,158 @@ function MiniStat({ icon, label, value }: { icon: string; label: string; value: 
   );
 }
 
-function ActivityHeatmap({ activityMap }: { activityMap: Record<string, number> }) {
-  // Generate last 90 days
-  const days: { date: string; count: number }[] = [];
+function ContributionMatrix({ activityMap, reports }: { activityMap: Record<string, number>; reports: { createdAt: Date; status: string }[] }) {
   const now = new Date();
+  const oneYearAgo = new Date(now);
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-  for (let i = 89; i >= 0; i--) {
+  // Generate 365 days grid (7 rows x ~52 columns)
+  const days: { date: string; count: number; dayOfWeek: number }[] = [];
+  for (let i = 364; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
     const key = d.toISOString().split('T')[0];
-    days.push({ date: key, count: activityMap[key] || 0 });
+    days.push({ date: key, count: activityMap[key] || 0, dayOfWeek: d.getDay() });
   }
 
+  // Organize into weeks (columns)
+  const weeks: { date: string; count: number; dayOfWeek: number }[][] = [];
+  let currentWeek: { date: string; count: number; dayOfWeek: number }[] = [];
+
+  // Pad the first week
+  const firstDow = days[0].dayOfWeek;
+  for (let i = 0; i < firstDow; i++) {
+    currentWeek.push({ date: '', count: -1, dayOfWeek: i });
+  }
+
+  days.forEach((day) => {
+    if (day.dayOfWeek === 0 && currentWeek.length > 0) {
+      weeks.push(currentWeek);
+      currentWeek = [];
+    }
+    currentWeek.push(day);
+  });
+  if (currentWeek.length > 0) weeks.push(currentWeek);
+
+  // Month labels
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthPositions: { label: string; col: number }[] = [];
+  let lastMonth = -1;
+  weeks.forEach((week, colIdx) => {
+    const validDay = week.find((d) => d.date);
+    if (validDay) {
+      const month = new Date(validDay.date).getMonth();
+      if (month !== lastMonth) {
+        monthPositions.push({ label: months[month], col: colIdx });
+        lastMonth = month;
+      }
+    }
+  });
+
+  // Stats
+  const totalReports = reports.length;
+  const resolvedReports = reports.filter((r) => r.status === 'resolved').length;
+  const successRate = totalReports > 0 ? ((resolvedReports / totalReports) * 100).toFixed(1) : '0.0';
+
+  // Calculate streaks
+  const sortedDates = [...new Set(
+    reports
+      .map((r) => r.createdAt.toISOString().split('T')[0])
+  )].sort();
+
+  let currentStreak = 0;
+  let longestStreak = 0;
+  let tempStreak = 1;
+
+  // Current streak (from today going backwards)
+  for (let i = 0; i <= 365; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().split('T')[0];
+    if (activityMap[key] && activityMap[key] > 0) {
+      currentStreak++;
+    } else if (i > 0) {
+      break;
+    }
+  }
+
+  // Longest streak
+  for (let i = 1; i < sortedDates.length; i++) {
+    const prev = new Date(sortedDates[i - 1]);
+    const curr = new Date(sortedDates[i]);
+    const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+    if (diff === 1) {
+      tempStreak++;
+    } else {
+      longestStreak = Math.max(longestStreak, tempStreak);
+      tempStreak = 1;
+    }
+  }
+  longestStreak = Math.max(longestStreak, tempStreak);
+
+  const getCellColor = (count: number) => {
+    if (count <= 0) return 'bg-neutral-200 dark:bg-neutral-700';
+    if (count === 1) return 'bg-emerald-200 dark:bg-emerald-800';
+    if (count === 2) return 'bg-emerald-400 dark:bg-emerald-600';
+    return 'bg-emerald-600 dark:bg-emerald-400';
+  };
+
   return (
-    <div className="flex flex-wrap gap-1">
-      {days.map((day) => (
-        <div
-          key={day.date}
-          className={cn(
-            'h-3 w-3 rounded-sm transition-colors',
-            day.count === 0 && 'bg-neutral-100 dark:bg-neutral-800',
-            day.count === 1 && 'bg-primary-200 dark:bg-primary-700',
-            day.count === 2 && 'bg-primary-400 dark:bg-primary-500',
-            day.count >= 3 && 'bg-primary-600 dark:bg-primary-400',
-          )}
-          title={`${day.date}: ${day.count} report${day.count !== 1 ? 's' : ''}`}
-        />
-      ))}
+    <div>
+      {/* Grid */}
+      <div className="overflow-x-auto pb-2">
+        <div className="inline-flex flex-col gap-0.5 min-w-[700px]">
+          {/* Month labels */}
+          <div className="flex gap-0.5 ml-0 mb-1">
+            {weeks.map((_, colIdx) => {
+              const mp = monthPositions.find((m) => m.col === colIdx);
+              return (
+                <div key={colIdx} className="w-[13px] text-center">
+                  {mp && <span className="text-[9px] text-neutral-500 dark:text-neutral-400">{mp.label}</span>}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Heatmap rows (7 days) */}
+          {Array.from({ length: 7 }).map((_, rowIdx) => (
+            <div key={rowIdx} className="flex gap-0.5">
+              {weeks.map((week, colIdx) => {
+                const cell = week.find((d) => d.dayOfWeek === rowIdx);
+                if (!cell || cell.count === -1) {
+                  return <div key={colIdx} className="w-[13px] h-[13px]" />;
+                }
+                return (
+                  <div
+                    key={colIdx}
+                    className={cn(
+                      'w-[13px] h-[13px] rounded-[2px] transition-colors',
+                      getCellColor(cell.count)
+                    )}
+                    title={`${cell.date}: ${cell.count} report${cell.count !== 1 ? 's' : ''}`}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-4 mt-5 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-medium">Longest Streak</p>
+          <p className="text-xl font-bold text-neutral-900 dark:text-white">{longestStreak} Days</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-medium">Current Streak</p>
+          <p className="text-xl font-bold text-neutral-900 dark:text-white">{currentStreak} Days</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-medium">Success Rate</p>
+          <p className="text-xl font-bold text-neutral-900 dark:text-white">{successRate}%</p>
+        </div>
+      </div>
     </div>
   );
 }
