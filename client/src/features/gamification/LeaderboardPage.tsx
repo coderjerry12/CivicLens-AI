@@ -63,9 +63,19 @@ export default function LeaderboardPage() {
           }
         });
 
-        // Build leaderboard entries
+        // Build leaderboard entries with bonus points from Firestore
+        const pointsSnap = await getDocs(collection(db, 'userPoints'));
+        const bonusMap: Record<string, number> = {};
+        pointsSnap.forEach((doc) => {
+          const d = doc.data();
+          bonusMap[doc.id] = (d.bonusPoints || 0) - (d.spentPoints || 0);
+        });
+
         const entries: LeaderboardEntry[] = Object.entries(userMap).map(([uid, data]) => {
-          const pts = data.reports * 10 + data.resolved * 25;
+          // Match the reputationService formula: reports*15 + resolved*25
+          const basePts = data.reports * 15 + data.resolved * 25;
+          const bonus = bonusMap[uid] || 0;
+          const pts = basePts + bonus;
           return {
             uid,
             displayName: data.name,
