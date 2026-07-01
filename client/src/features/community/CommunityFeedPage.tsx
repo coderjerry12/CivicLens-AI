@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { MapPin, CheckCircle2, MessageSquare, Brain, Users } from 'lucide-react';
+import { MapPin, CheckCircle2, MessageSquare, Brain, Users, Navigation } from 'lucide-react';
 import { Badge, Skeleton, SearchBar, FilterChip } from '@/components/ui';
 import { EmptyState } from '@/components/shared';
 import { PageWrapper } from '@/components/layout';
@@ -12,13 +12,25 @@ import { CATEGORY_FILTER_OPTIONS, STATUS_FILTER_OPTIONS } from '@/types/filter';
 export default function CommunityFeedPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { issues, loading, filters, setFilters, refresh } = useCommunityFeed();
+  const { issues, loading, filters, setFilters, refresh, requestLocation, userLocation, locationLoading } = useCommunityFeed();
 
   const handleVerify = async (issueId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) return;
     const success = await verifyIssue(issueId, user.uid, user.displayName || 'User');
     if (success) refresh();
+  };
+
+  const getDistance = (lat: number, lng: number): string | null => {
+    if (!userLocation || filters.sortBy !== 'nearest') return null;
+    const R = 6371;
+    const dLat = (lat - userLocation.lat) * Math.PI / 180;
+    const dLon = (lng - userLocation.lng) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(userLocation.lat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+      Math.sin(dLon / 2) ** 2;
+    const km = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return km < 1 ? `${Math.round(km * 1000)}m away` : `${km.toFixed(1)}km away`;
   };
 
   return (
@@ -31,14 +43,27 @@ export default function CommunityFeedPage() {
           placeholder="Search community issues..."
           className="flex-1"
         />
-        <select
-          value={filters.sortBy}
-          onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as 'newest' | 'most_verified' })}
-          className="h-10 rounded-[14px] border border-border dark:border-neutral-700 bg-surface dark:bg-neutral-800 text-text-primary dark:text-neutral-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-        >
-          <option value="newest">Newest</option>
-          <option value="most_verified">Most Verified</option>
-        </select>
+        <div className="flex items-center gap-2">
+          <select
+            value={filters.sortBy}
+            onChange={(e) => {
+              const value = e.target.value as 'newest' | 'most_verified' | 'nearest';
+              setFilters({ ...filters, sortBy: value });
+              if (value === 'nearest') requestLocation();
+            }}
+            className="h-10 rounded-[14px] border border-border dark:border-neutral-700 bg-surface dark:bg-neutral-800 text-text-primary dark:text-neutral-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="newest">Newest</option>
+            <option value="most_verified">Most Verified</option>
+            <option value="nearest">📍 Near Me</option>
+          </select>
+          {filters.sortBy === 'nearest' && (
+            <span className="text-[10px] text-neutral-500 dark:text-neutral-400 whitespace-nowrap flex items-center gap-1">
+              <Navigation className="h-3 w-3 text-primary-500" />
+              {locationLoading ? 'Locating...' : userLocation ? 'Sorted by distance' : 'Allow location'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -97,6 +122,15 @@ export default function CommunityFeedPage() {
                         <span className="text-[10px] text-neutral-400">{formatRelativeTime(issue.createdAt)}</span>
                         <span className="text-neutral-300 dark:text-neutral-600">·</span>
                         <span className="text-[10px] text-neutral-400 flex items-center gap-1"><MapPin className="h-2.5 w-2.5" />{issue.address.split(',')[0]}</span>
+                        {getDistance(issue.latitude, issue.longitude) && (
+                          <>
+                            <span className="text-neutral-300 dark:text-neutral-600">·</span>
+                            <span className="text-[10px] text-primary-600 dark:text-primary-400 font-medium flex items-center gap-1">
+                              <Navigation className="h-2.5 w-2.5" />
+                              {getDistance(issue.latitude, issue.longitude)}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                     <Badge variant={issue.severity === 'critical' ? 'danger' : issue.severity === 'high' ? 'accent' : 'primary'} size="sm">

@@ -2,9 +2,21 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchCommunityFeed } from '@/services/communityFeedService';
 import type { FeedIssue, CommunityFilters } from '@/types/community';
 
+function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export function useCommunityFeed() {
   const [issues, setIssues] = useState<FeedIssue[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [filters, setFilters] = useState<CommunityFilters>({
     search: '', category: null, status: null, severity: null, department: null, sortBy: 'newest',
   });
@@ -22,6 +34,22 @@ export function useCommunityFeed() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
+  // Request user location when "nearest" sort is selected
+  const requestLocation = useCallback(() => {
+    if (userLocation) return;
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocationLoading(false);
+      },
+      () => {
+        setLocationLoading(false);
+      },
+      { enableHighAccuracy: false, timeout: 10000 }
+    );
+  }, [userLocation]);
+
   const filteredIssues = useMemo(() => {
     let result = issues;
 
@@ -38,9 +66,16 @@ export function useCommunityFeed() {
 
     switch (filters.sortBy) {
       case 'most_verified': return [...result].sort((a, b) => b.verificationCount - a.verificationCount);
+      case 'nearest':
+        if (!userLocation) return result;
+        return [...result].sort((a, b) => {
+          const distA = getDistanceKm(userLocation.lat, userLocation.lng, a.latitude, a.longitude);
+          const distB = getDistanceKm(userLocation.lat, userLocation.lng, b.latitude, b.longitude);
+          return distA - distB;
+        });
       case 'newest': default: return [...result].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     }
-  }, [issues, filters]);
+  }, [issues, filters, userLocation]);
 
-  return { issues: filteredIssues, allIssues: issues, loading, filters, setFilters, refresh: fetch };
+  return { issues: filteredIssues, allIssues: issues, loading, filters, setFilters, refresh: fetch, requestLocation, userLocation, locationLoading };
 }
