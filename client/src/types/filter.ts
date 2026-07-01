@@ -25,25 +25,25 @@ export const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 export const CATEGORY_FILTER_OPTIONS = [
-  { value: 'pothole', label: 'Pothole' },
-  { value: 'water_leakage', label: 'Water Leakage' },
-  { value: 'garbage', label: 'Garbage' },
-  { value: 'streetlight', label: 'Streetlight' },
-  { value: 'road_hazard', label: 'Road Hazard' },
-  { value: 'drainage', label: 'Drainage' },
-  { value: 'other', label: 'Other' },
+  { value: 'pothole', label: '🕳️ Pothole' },
+  { value: 'water_leakage', label: '💧 Water' },
+  { value: 'garbage', label: '🗑️ Waste' },
+  { value: 'streetlight', label: '💡 Streetlight' },
+  { value: 'road_hazard', label: '🚧 Road' },
+  { value: 'drainage', label: '🌊 Drainage' },
+  { value: 'other', label: '📌 Other' },
 ];
 
 export const STATUS_FILTER_OPTIONS = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'resolved', label: 'Resolved' },
-  { value: 'closed', label: 'Closed' },
+  { value: 'pending', label: '⏳ Pending' },
+  { value: 'in_progress', label: '🔄 In Progress' },
+  { value: 'resolved', label: '✅ Resolved' },
+  { value: 'closed', label: '🔒 Closed' },
 ];
 
 export const SEVERITY_FILTER_OPTIONS = [
-  { value: 'critical', label: 'Critical' },
-  { value: 'high', label: 'High' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'low', label: 'Low' },
+  { value: 'critical', label: '🔴 Critical' },
+  { value: 'high', label: '🟠 High' },
+  { value: 'medium', label: '🔵 Medium' },
+  { value: 'low', label: '⚪ Low' },
 ];

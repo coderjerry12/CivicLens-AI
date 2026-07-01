@@ -27,14 +27,14 @@ export const ROUTES = {
 // ─── Issue Categories ───
 
 export const ISSUE_CATEGORIES = [
-  { value: 'pothole', label: 'Pothole', icon: 'CircleAlert' },
-  { value: 'water_leakage', label: 'Water Leakage', icon: 'Droplets' },
-  { value: 'garbage', label: 'Garbage', icon: 'Trash2' },
-  { value: 'streetlight', label: 'Streetlight', icon: 'Lightbulb' },
-  { value: 'road_hazard', label: 'Road Hazard', icon: 'TriangleAlert' },
-  { value: 'drainage', label: 'Drainage', icon: 'Waves' },
-  { value: 'noise', label: 'Noise', icon: 'Volume2' },
-  { value: 'other', label: 'Other', icon: 'HelpCircle' },
+  { value: 'pothole', label: '🕳️ Pothole', icon: 'CircleAlert' },
+  { value: 'water_leakage', label: '💧 Water Leakage', icon: 'Droplets' },
+  { value: 'garbage', label: '🗑️ Garbage', icon: 'Trash2' },
+  { value: 'streetlight', label: '💡 Streetlight', icon: 'Lightbulb' },
+  { value: 'road_hazard', label: '🚧 Road Hazard', icon: 'TriangleAlert' },
+  { value: 'drainage', label: '🌊 Drainage', icon: 'Waves' },
+  { value: 'noise', label: '🔊 Noise', icon: 'Volume2' },
+  { value: 'other', label: '📌 Other', icon: 'HelpCircle' },
 ] as const;
 
 // ─── Issue Statuses ───
