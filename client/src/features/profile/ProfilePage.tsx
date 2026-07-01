@@ -1,15 +1,37 @@
-import { Trophy, Star, Target, Calendar } from 'lucide-react';
+import { useState } from 'react';
+import { Trophy, Star, Target, Calendar, Pencil, Check, X } from 'lucide-react';
 import { Card, CardContent, CardTitle, Badge, Avatar, Skeleton } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { useRecentReports, useProfile, usePoints } from '@/hooks';
 import { LEVEL_THRESHOLDS } from '@/types/reputation';
 import { cn } from '@/lib/utils';
+import { updateProfile } from 'firebase/auth';
+import { doc, updateDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const { reports, loading } = useRecentReports(100);
   const { reputation, badges, achievements, activityMap } = useProfile(reports);
   const { totalEarned } = usePoints();
+  const [editingName, setEditingName] = useState(false);
+  const [newName, setNewName] = useState(user?.displayName || '');
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveName = async () => {
+    if (!newName.trim() || !auth.currentUser) return;
+    setSaving(true);
+    try {
+      await updateProfile(auth.currentUser, { displayName: newName.trim() });
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), { name: newName.trim() });
+      setEditingName(false);
+      // Reload to reflect changes
+      window.location.reload();
+    } catch (err) {
+      console.error('[Profile] Name update failed:', err);
+    }
+    setSaving(false);
+  };
 
   if (loading) {
     return (
@@ -42,7 +64,44 @@ export default function ProfilePage() {
               className="ring-4 ring-white/30 h-20 w-20 text-2xl"
             />
             <div className="text-center sm:text-left">
-              <h1 className="text-2xl font-bold">{user?.displayName}</h1>
+              {editingName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="bg-white/20 border border-white/30 rounded-[10px] px-3 py-1.5 text-lg font-bold text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 w-48"
+                    autoFocus
+                    onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                  />
+                  <button
+                    onClick={handleSaveName}
+                    disabled={saving}
+                    className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                    aria-label="Save name"
+                  >
+                    <Check className="h-4 w-4 text-white" />
+                  </button>
+                  <button
+                    onClick={() => { setEditingName(false); setNewName(user?.displayName || ''); }}
+                    className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                    aria-label="Cancel"
+                  >
+                    <X className="h-4 w-4 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold">{user?.displayName}</h1>
+                  <button
+                    onClick={() => setEditingName(true)}
+                    className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                    aria-label="Edit name"
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-white" />
+                  </button>
+                </div>
+              )}
               <p className="text-primary-100 text-sm">{user?.email}</p>
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-2xl">{currentLevelData.icon}</span>
