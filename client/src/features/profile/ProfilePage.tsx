@@ -6,7 +6,7 @@ import { useRecentReports, useProfile, usePoints } from '@/hooks';
 import { LEVEL_THRESHOLDS } from '@/types/reputation';
 import { cn } from '@/lib/utils';
 import { updateProfile } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
 export default function ProfilePage() {
@@ -22,10 +22,25 @@ export default function ProfilePage() {
     if (!newName.trim() || !auth.currentUser) return;
     setSaving(true);
     try {
-      await updateProfile(auth.currentUser, { displayName: newName.trim() });
-      await updateDoc(doc(db, 'users', auth.currentUser.uid), { name: newName.trim() });
+      const trimmedName = newName.trim();
+      const uid = auth.currentUser.uid;
+
+      // Update Firebase Auth profile
+      await updateProfile(auth.currentUser, { displayName: trimmedName });
+
+      // Update Firestore user document
+      await updateDoc(doc(db, 'users', uid), { name: trimmedName });
+
+      // Update reporter name on all user's existing issues
+      const issuesRef = collection(db, 'issues');
+      const userIssuesQuery = query(issuesRef, where('reporter.uid', '==', uid));
+      const issuesSnap = await getDocs(userIssuesQuery);
+      const updatePromises = issuesSnap.docs.map((issueDoc) =>
+        updateDoc(doc(db, 'issues', issueDoc.id), { 'reporter.name': trimmedName })
+      );
+      await Promise.all(updatePromises);
+
       setEditingName(false);
-      // Reload to reflect changes
       window.location.reload();
     } catch (err) {
       console.error('[Profile] Name update failed:', err);
