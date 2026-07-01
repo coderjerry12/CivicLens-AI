@@ -37,6 +37,7 @@ export async function fetchIssueQueue(): Promise<QueueIssue[]> {
       address: d.location?.address || '',
       reporterName: d.reporter?.name || 'Anonymous',
       reporterEmail: d.reporter?.email || '',
+      reporterUid: d.reporter?.uid || '',
       imageDataURL: d.imageDataURL || '',
       aiConfidence,
       validations,

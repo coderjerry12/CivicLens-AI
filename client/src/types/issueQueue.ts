@@ -14,6 +14,7 @@ export interface QueueIssue {
   address: string;
   reporterName: string;
   reporterEmail: string;
+  reporterUid: string;
   imageDataURL: string;
   aiConfidence: number;
   validations: number;

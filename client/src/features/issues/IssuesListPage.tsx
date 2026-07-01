@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ClipboardList,
@@ -13,6 +13,7 @@ import { PageWrapper } from '@/components/layout';
 import { useIssueQueue } from '@/hooks/useIssueQueue';
 import { useIssueFilters } from '@/hooks/useIssueFilters';
 import { useBulkActions } from '@/hooks/useBulkActions';
+import { useAuth } from '@/features/auth';
 import { formatRelativeTime, cn } from '@/lib/utils';
 import {
   QUEUE_SORT_OPTIONS,
@@ -22,7 +23,14 @@ import { CATEGORY_FILTER_OPTIONS, STATUS_FILTER_OPTIONS, SEVERITY_FILTER_OPTIONS
 
 export default function IssuesListPage() {
   const navigate = useNavigate();
-  const { issues, loading, refresh } = useIssueQueue();
+  const { user } = useAuth();
+  const { issues: allIssues, loading, refresh } = useIssueQueue();
+
+  // Citizens only see their own issues; authorities see all
+  const issues = useMemo(() => {
+    if (user?.role === 'authority') return allIssues;
+    return allIssues.filter((issue) => issue.reporterUid === user?.uid);
+  }, [allIssues, user]);
   const {
     filters, filteredIssues, activeFilterCount, resultCount,
     setSearch, setStatus, setSeverity, setCategory, setSortBy, clearAll,
