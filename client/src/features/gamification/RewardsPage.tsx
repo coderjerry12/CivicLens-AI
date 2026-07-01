@@ -27,7 +27,7 @@ export default function RewardsPage() {
       icon: '📜',
       cost: 100,
       category: 'certificate',
-      available: reputation.score >= 100,
+      available: true,
       redeemed: false,
     },
     {
@@ -37,7 +37,7 @@ export default function RewardsPage() {
       icon: '🛡️',
       cost: 150,
       category: 'badge',
-      available: reputation.score >= 150,
+      available: true,
       redeemed: false,
     },
     {
@@ -47,7 +47,7 @@ export default function RewardsPage() {
       icon: '🌿',
       cost: 200,
       category: 'certificate',
-      available: reputation.score >= 200,
+      available: true,
       redeemed: false,
     },
     {
@@ -57,7 +57,7 @@ export default function RewardsPage() {
       icon: '⚡',
       cost: 300,
       category: 'perk',
-      available: reputation.score >= 300,
+      available: true,
       redeemed: false,
     },
     {
@@ -67,7 +67,7 @@ export default function RewardsPage() {
       icon: '🏆',
       cost: 500,
       category: 'badge',
-      available: reputation.score >= 500,
+      available: true,
       redeemed: false,
     },
     {
@@ -77,7 +77,7 @@ export default function RewardsPage() {
       icon: '👑',
       cost: 750,
       category: 'certificate',
-      available: reputation.score >= 750,
+      available: true,
       redeemed: false,
     },
     {
@@ -87,7 +87,7 @@ export default function RewardsPage() {
       icon: '💡',
       cost: 400,
       category: 'perk',
-      available: reputation.score >= 400,
+      available: true,
       redeemed: false,
     },
     {
@@ -97,7 +97,7 @@ export default function RewardsPage() {
       icon: '🎖️',
       cost: 250,
       category: 'voucher',
-      available: reputation.score >= 250,
+      available: true,
       redeemed: false,
     },
   ]);
@@ -206,7 +206,7 @@ export default function RewardsPage() {
             hoverable
             className={cn(
               'relative overflow-hidden',
-              !reward.available && 'opacity-60',
+              reputation.score < reward.cost && !reward.redeemed && 'opacity-60',
               reward.redeemed && 'ring-2 ring-success-400'
             )}
           >
@@ -237,7 +237,7 @@ export default function RewardsPage() {
                     <CheckCircle className="h-3.5 w-3.5" />
                     Redeemed
                   </Badge>
-                ) : reward.available ? (
+                ) : reputation.score >= reward.cost ? (
                   <Button
                     size="sm"
                     variant="primary"
