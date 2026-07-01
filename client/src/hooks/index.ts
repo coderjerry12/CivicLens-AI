@@ -14,3 +14,4 @@ export { useCommunityInsights } from './useCommunityInsights';
 export { useProfile } from './useProfile';
 export { useKeyboardShortcuts } from './useKeyboardShortcuts';
 export { useCommandPalette } from './useCommandPalette';
+export { usePoints } from './usePoints';

@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Gift, Star, TrendingUp, ShieldCheck, Lock, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardTitle, Badge, Button } from '@/components/ui';
 import { useAuth } from '@/features/auth';
-import { useRecentReports, useProfile } from '@/hooks';
+import { usePoints } from '@/hooks';
+import { spendPoints } from '@/services/pointsService';
 import { cn } from '@/lib/utils';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 interface Reward {
   id: string;
@@ -17,136 +16,38 @@ interface Reward {
 }
 
 const ALL_REWARDS: Reward[] = [
-  {
-    id: 'r1',
-    name: 'Active Citizen Certificate',
-    description: 'Digital certificate recognizing your civic contributions',
-    icon: '📜',
-    cost: 100,
-    category: 'certificate',
-  },
-  {
-    id: 'r2',
-    name: 'Community Guardian Badge',
-    description: 'Exclusive profile badge showing your guardian status',
-    icon: '🛡️',
-    cost: 150,
-    category: 'badge',
-  },
-  {
-    id: 'r3',
-    name: 'Eco Warrior Certificate',
-    description: 'Certificate for environmental issue reporting',
-    icon: '🌿',
-    cost: 200,
-    category: 'certificate',
-  },
-  {
-    id: 'r4',
-    name: 'Priority Reporter Perk',
-    description: 'Your issues get flagged for faster processing',
-    icon: '⚡',
-    cost: 300,
-    category: 'perk',
-  },
-  {
-    id: 'r5',
-    name: 'City Champion Badge',
-    description: 'Golden badge for top community contributors',
-    icon: '🏆',
-    cost: 500,
-    category: 'badge',
-  },
-  {
-    id: 'r6',
-    name: 'Community Leader Certificate',
-    description: 'Official recognition as a community leader',
-    icon: '👑',
-    cost: 750,
-    category: 'certificate',
-  },
-  {
-    id: 'r7',
-    name: 'Feature Request Priority',
-    description: 'Submit feature suggestions that get reviewed first',
-    icon: '💡',
-    cost: 400,
-    category: 'perk',
-  },
-  {
-    id: 'r8',
-    name: 'Volunteer Appreciation',
-    description: 'Digital appreciation voucher for community service',
-    icon: '🎖️',
-    cost: 250,
-    category: 'voucher',
-  },
+  { id: 'r1', name: 'Active Citizen Certificate', description: 'Digital certificate recognizing your civic contributions', icon: '📜', cost: 100, category: 'certificate' },
+  { id: 'r2', name: 'Community Guardian Badge', description: 'Exclusive profile badge showing your guardian status', icon: '🛡️', cost: 150, category: 'badge' },
+  { id: 'r3', name: 'Eco Warrior Certificate', description: 'Certificate for environmental issue reporting', icon: '🌿', cost: 200, category: 'certificate' },
+  { id: 'r4', name: 'Priority Reporter Perk', description: 'Your issues get flagged for faster processing', icon: '⚡', cost: 300, category: 'perk' },
+  { id: 'r5', name: 'City Champion Badge', description: 'Golden badge for top community contributors', icon: '🏆', cost: 500, category: 'badge' },
+  { id: 'r6', name: 'Community Leader Certificate', description: 'Official recognition as a community leader', icon: '👑', cost: 750, category: 'certificate' },
+  { id: 'r7', name: 'Feature Request Priority', description: 'Submit feature suggestions that get reviewed first', icon: '💡', cost: 400, category: 'perk' },
+  { id: 'r8', name: 'Volunteer Appreciation', description: 'Digital appreciation voucher for community service', icon: '🎖️', cost: 250, category: 'voucher' },
 ];
 
 export default function RewardsPage() {
   const { user } = useAuth();
-  const { reports } = useRecentReports(100);
-  const { reputation } = useProfile(reports);
-
-  const [redeemedIds, setRedeemedIds] = useState<string[]>([]);
-  const [spentPoints, setSpentPoints] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const { availablePoints, spentPoints: spent, redeemedIds, level, reports, loading, updateLocal } = usePoints();
   const [filter, setFilter] = useState<'all' | 'certificate' | 'badge' | 'voucher' | 'perk'>('all');
+  const [redeeming, setRedeeming] = useState<string | null>(null);
 
-  // Available points = earned - spent
-  const availablePoints = reputation.score - spentPoints;
+  const filteredRewards = filter === 'all' ? ALL_REWARDS : ALL_REWARDS.filter((r) => r.category === filter);
 
-  // Load redeemed rewards from Firestore on mount
-  useEffect(() => {
-    async function loadRedemptions() {
-      if (!user) return;
-      try {
-        const docRef = doc(db, 'userRewards', user.uid);
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          const data = snap.data();
-          setRedeemedIds(data.redeemedIds || []);
-          setSpentPoints(data.spentPoints || 0);
-        }
-      } catch (err) {
-        console.error('[Rewards] Load failed:', err);
-      }
-      setLoading(false);
-    }
-    loadRedemptions();
-  }, [user]);
-
-  // Persist redemption to Firestore
   const handleRedeem = async (rewardId: string) => {
     if (!user) return;
     const reward = ALL_REWARDS.find((r) => r.id === rewardId);
-    if (!reward) return;
-    if (availablePoints < reward.cost) return;
+    if (!reward || availablePoints < reward.cost) return;
 
-    const newRedeemedIds = [...redeemedIds, rewardId];
-    const newSpentPoints = spentPoints + reward.cost;
-
-    // Optimistic update
-    setRedeemedIds(newRedeemedIds);
-    setSpentPoints(newSpentPoints);
-
-    // Save to Firestore
+    setRedeeming(rewardId);
     try {
-      const docRef = doc(db, 'userRewards', user.uid);
-      await setDoc(docRef, {
-        redeemedIds: newRedeemedIds,
-        spentPoints: newSpentPoints,
-        lastUpdated: new Date().toISOString(),
-      });
+      const updatedData = await spendPoints(user.uid, rewardId, reward.cost);
+      updateLocal(updatedData);
     } catch (err) {
-      console.error('[Rewards] Save failed:', err);
-      // Revert on failure
-      setRedeemedIds(redeemedIds);
-      setSpentPoints(spentPoints);
+      console.error('[Rewards] Redeem failed:', err);
     }
+    setRedeeming(null);
   };
-
-  const filteredRewards = filter === 'all' ? ALL_REWARDS : ALL_REWARDS.filter((r) => r.category === filter);
 
   const getCategoryIcon = (cat: string) => {
     switch (cat) {
@@ -191,7 +92,7 @@ export default function RewardsPage() {
             <p className="text-sm text-white/70">Available Points</p>
             <p className="text-4xl font-bold">{availablePoints}</p>
             <p className="text-sm text-white/80 mt-1">
-              {reputation.level} • {spentPoints > 0 ? `${spentPoints} spent` : 'Keep earning!'}
+              {level} • {spent > 0 ? `${spent} spent` : 'Keep earning!'}
             </p>
           </div>
           <div className="flex flex-col items-center gap-1">
@@ -212,12 +113,12 @@ export default function RewardsPage() {
         <CardContent className="mt-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {[
-              { action: 'Report Issue', points: '+10', icon: '📋' },
+              { action: 'Report Issue', points: '+15', icon: '📋' },
               { action: 'Resolved', points: '+25', icon: '✅' },
-              { action: 'Daily Streak', points: '+3', icon: '🔥' },
+              { action: 'Daily Streak', points: '+5', icon: '🔥' },
               { action: 'Challenge', points: '+15', icon: '🎯' },
               { action: 'Quiz Win', points: '+20', icon: '🧠' },
-              { action: 'Upvote', points: '+5', icon: '👍' },
+              { action: 'Upvote', points: '+10', icon: '👍' },
             ].map((item) => (
               <div key={item.action} className="text-center p-3 rounded-[12px] bg-neutral-50 dark:bg-neutral-800/50">
                 <span className="text-2xl block">{item.icon}</span>
@@ -265,7 +166,6 @@ export default function RewardsPage() {
                 isRedeemed && 'ring-2 ring-success-400'
               )}
             >
-              {/* Category tag */}
               <Badge
                 variant={reward.category === 'certificate' ? 'primary' : reward.category === 'badge' ? 'accent' : reward.category === 'perk' ? 'secondary' : 'neutral'}
                 size="sm"
@@ -280,13 +180,11 @@ export default function RewardsPage() {
                   <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-200 mb-1">{reward.name}</h3>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">{reward.description}</p>
 
-                  {/* Cost */}
                   <div className="flex items-center gap-1 mb-4">
                     <Star className="h-4 w-4 text-accent-500" />
                     <span className="text-sm font-bold text-neutral-800 dark:text-neutral-200">{reward.cost} points</span>
                   </div>
 
-                  {/* Action Button */}
                   {isRedeemed ? (
                     <Badge variant="success" size="lg" className="w-full justify-center">
                       <CheckCircle className="h-3.5 w-3.5" />
@@ -297,6 +195,7 @@ export default function RewardsPage() {
                       size="sm"
                       variant="primary"
                       className="w-full"
+                      isLoading={redeeming === reward.id}
                       onClick={() => handleRedeem(reward.id)}
                     >
                       <Gift className="h-3.5 w-3.5" />

@@ -1,7 +1,7 @@
 import { Trophy, Star, Target, Calendar } from 'lucide-react';
 import { Card, CardContent, CardTitle, Badge, Avatar, Skeleton } from '@/components/ui';
 import { useAuth } from '@/features/auth';
-import { useRecentReports, useProfile } from '@/hooks';
+import { useRecentReports, useProfile, usePoints } from '@/hooks';
 import { LEVEL_THRESHOLDS } from '@/types/reputation';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +9,7 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const { reports, loading } = useRecentReports(100);
   const { reputation, badges, achievements, activityMap } = useProfile(reports);
+  const { totalEarned } = usePoints();
 
   if (loading) {
     return (
@@ -46,7 +47,7 @@ export default function ProfilePage() {
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-2xl">{currentLevelData.icon}</span>
                 <span className="text-sm font-semibold">{reputation.level}</span>
-                <span className="text-primary-200 text-xs">• {reputation.score} points</span>
+                <span className="text-primary-200 text-xs">• {totalEarned} points</span>
               </div>
             </div>
           </div>
@@ -76,7 +77,7 @@ export default function ProfilePage() {
         <MiniStat icon="📋" label="Reports" value={reputation.breakdown.reportsSubmitted} />
         <MiniStat icon="✅" label="Resolved" value={reputation.breakdown.resolvedReports} />
         <MiniStat icon="🔥" label="Streak" value={`${reputation.breakdown.streakDays}d`} />
-        <MiniStat icon="⭐" label="Score" value={reputation.score} />
+        <MiniStat icon="⭐" label="Score" value={totalEarned} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -165,7 +166,7 @@ export default function ProfilePage() {
         <CardContent className="mt-4">
           <div className="flex items-center gap-2 overflow-x-auto pb-2">
             {LEVEL_THRESHOLDS.map((lvl, idx) => {
-              const reached = reputation.score >= lvl.minScore;
+              const reached = totalEarned >= lvl.minScore;
               return (
                 <div key={lvl.level} className="flex items-center">
                   <div className={cn(

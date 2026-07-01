@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Target, Zap, Calendar, Lock, CheckCircle, Gift, Flame } from 'lucide-react';
 import { Card, CardContent, CardTitle, Badge, Button } from '@/components/ui';
-import { useRecentReports, useProfile } from '@/hooks';
+import { useAuth } from '@/features/auth';
+import { usePoints } from '@/hooks';
+import { claimChallenge } from '@/services/pointsService';
 import { cn } from '@/lib/utils';
 
 interface Challenge {
@@ -26,8 +28,8 @@ interface Achievement {
 }
 
 export default function ChallengesPage() {
-  const { reports } = useRecentReports(100);
-  const { reputation } = useProfile(reports);
+  const { user } = useAuth();
+  const { reports, availablePoints, breakdown, challengesClaimed, updateLocal } = usePoints();
 
   const reportsToday = reports.filter(
     (r) => r.createdAt.toDateString() === new Date().toDateString()
@@ -123,15 +125,28 @@ export default function ChallengesPage() {
     { id: 'a4', name: 'Veteran', description: 'Submit 25 reports', icon: '⚡', unlocked: reports.length >= 25, rarity: 'rare' },
     { id: 'a5', name: 'Problem Solver', description: 'Get 5 issues resolved', icon: '🧩', unlocked: resolvedCount >= 5, rarity: 'rare' },
     { id: 'a6', name: 'Hero', description: 'Get 10 issues resolved', icon: '🦸', unlocked: resolvedCount >= 10, rarity: 'epic' },
-    { id: 'a7', name: 'Legend', description: 'Reach 500 points', icon: '👑', unlocked: reputation.score >= 500, rarity: 'epic' },
-    { id: 'a8', name: 'Champion', description: 'Reach City Champion level', icon: '🏆', unlocked: reputation.score >= 600, rarity: 'legendary' },
-    { id: 'a9', name: 'Streak Master', description: '7-day activity streak', icon: '🔥', unlocked: reputation.breakdown.streakDays >= 7, rarity: 'rare' },
+    { id: 'a7', name: 'Legend', description: 'Reach 500 points', icon: '👑', unlocked: availablePoints >= 500, rarity: 'epic' },
+    { id: 'a8', name: 'Champion', description: 'Reach City Champion level', icon: '🏆', unlocked: availablePoints >= 600, rarity: 'legendary' },
+    { id: 'a9', name: 'Streak Master', description: '7-day activity streak', icon: '🔥', unlocked: breakdown.streakDays >= 7, rarity: 'rare' },
     { id: 'a10', name: 'Multi-Category', description: 'Report in 5+ categories', icon: '🌈', unlocked: new Set(reports.map((r) => r.category)).size >= 5, rarity: 'epic' },
     { id: 'a11', name: 'Photo Pro', description: 'Submit 10 reports with photos', icon: '📷', unlocked: reports.filter((r) => r.imageDataURL).length >= 10, rarity: 'rare' },
     { id: 'a12', name: 'Night Owl', description: 'Report an issue after midnight', icon: '🦉', unlocked: reports.some((r) => r.createdAt.getHours() < 5), rarity: 'legendary' },
   ];
 
-  const handleClaim = (id: string, type: 'daily' | 'weekly') => {
+  const handleClaim = async (id: string, type: 'daily' | 'weekly') => {
+    if (!user) return;
+    // Find the challenge reward amount
+    const allChallenges = [...dailyChallenges, ...weeklyChallenges];
+    const challenge = allChallenges.find((c) => c.id === id);
+    if (!challenge) return;
+
+    try {
+      const updatedData = await claimChallenge(user.uid, id, challenge.reward);
+      updateLocal(updatedData);
+    } catch (err) {
+      console.error('[Challenges] Claim failed:', err);
+    }
+
     if (type === 'daily') {
       setDailyChallenges((prev) =>
         prev.map((c) => (c.id === id ? { ...c, claimed: true } : c))
@@ -170,12 +185,12 @@ export default function ChallengesPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card hoverable className="text-center !p-4">
           <span className="text-2xl">🔥</span>
-          <p className="text-lg font-bold text-neutral-800 dark:text-white mt-1">{reputation.breakdown.streakDays}</p>
+          <p className="text-lg font-bold text-neutral-800 dark:text-white mt-1">{breakdown.streakDays}</p>
           <p className="text-[11px] text-neutral-500">Day Streak</p>
         </Card>
         <Card hoverable className="text-center !p-4">
           <span className="text-2xl">⭐</span>
-          <p className="text-lg font-bold text-neutral-800 dark:text-white mt-1">{reputation.score}</p>
+          <p className="text-lg font-bold text-neutral-800 dark:text-white mt-1">{availablePoints}</p>
           <p className="text-[11px] text-neutral-500">Total Points</p>
         </Card>
         <Card hoverable className="text-center !p-4">
@@ -235,12 +250,12 @@ export default function ChallengesPage() {
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  {completed && !challenge.claimed ? (
+                  {completed && !challengesClaimed.includes(challenge.id) ? (
                     <Button size="sm" variant="primary" onClick={() => handleClaim(challenge.id, 'daily')}>
                       <Gift className="h-3.5 w-3.5" />
                       Claim
                     </Button>
-                  ) : challenge.claimed ? (
+                  ) : challengesClaimed.includes(challenge.id) ? (
                     <Badge variant="success" size="sm">
                       <CheckCircle className="h-3 w-3" /> Claimed
                     </Badge>
@@ -294,12 +309,12 @@ export default function ChallengesPage() {
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  {completed && !challenge.claimed ? (
+                  {completed && !challengesClaimed.includes(challenge.id) ? (
                     <Button size="sm" variant="secondary" onClick={() => handleClaim(challenge.id, 'weekly')}>
                       <Gift className="h-3.5 w-3.5" />
                       Claim
                     </Button>
-                  ) : challenge.claimed ? (
+                  ) : challengesClaimed.includes(challenge.id) ? (
                     <Badge variant="success" size="sm">
                       <CheckCircle className="h-3 w-3" /> Claimed
                     </Badge>

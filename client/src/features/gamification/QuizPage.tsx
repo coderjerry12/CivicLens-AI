@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
 import { Brain, CheckCircle, XCircle, RotateCcw, Trophy, Zap } from 'lucide-react';
 import { Card, CardContent, CardTitle, Badge, Button } from '@/components/ui';
+import { useAuth } from '@/features/auth';
+import { recordQuizResult } from '@/services/pointsService';
 import { cn } from '@/lib/utils';
 
 interface QuizQuestion {
@@ -114,6 +116,7 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
 type QuizState = 'idle' | 'playing' | 'finished';
 
 export default function QuizPage() {
+  const { user } = useAuth();
   const [state, setState] = useState<QuizState>('idle');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -121,6 +124,7 @@ export default function QuizPage() {
   const [score, setScore] = useState(0);
   const [answers, setAnswers] = useState<(boolean | null)[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [pointsAwarded, setPointsAwarded] = useState(0);
 
   const categories = [...new Set(QUIZ_QUESTIONS.map((q) => q.category))];
 
@@ -135,6 +139,7 @@ export default function QuizPage() {
     setShowExplanation(false);
     setScore(0);
     setAnswers([]);
+    setPointsAwarded(0);
   }, []);
 
   const handleAnswer = (answerIdx: number) => {
@@ -147,9 +152,19 @@ export default function QuizPage() {
     setAnswers((prev) => [...prev, isCorrect]);
   };
 
-  const nextQuestion = () => {
+  const nextQuestion = async () => {
     if (currentQuestion + 1 >= filteredQuestions.length) {
       setState('finished');
+      // Save quiz result to Firestore and award points
+      if (user) {
+        try {
+          const finalScore = score + (selectedAnswer === filteredQuestions[currentQuestion].correctAnswer ? 1 : 0);
+          const result = await recordQuizResult(user.uid, finalScore, filteredQuestions.length);
+          setPointsAwarded(result.pointsEarned);
+        } catch (err) {
+          console.error('[Quiz] Failed to save result:', err);
+        }
+      }
     } else {
       setCurrentQuestion((q) => q + 1);
       setSelectedAnswer(null);
@@ -377,7 +392,7 @@ export default function QuizPage() {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 dark:bg-primary-500/10 mb-6">
             <Trophy className="h-4 w-4 text-primary-600 dark:text-primary-400" />
             <span className="text-sm font-bold text-primary-700 dark:text-primary-300">
-              +{Math.round((score / filteredQuestions.length) * 20)} points earned
+              +{pointsAwarded} points earned
             </span>
           </div>
 

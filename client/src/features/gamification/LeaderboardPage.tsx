@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { Trophy, Medal, TrendingUp, Star } from 'lucide-react';
 import { Card, CardContent, CardTitle, Badge, Button, Avatar } from '@/components/ui';
 import { useAuth } from '@/features/auth';
-import { useRecentReports, useProfile } from '@/hooks';
 import { cn } from '@/lib/utils';
-import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface LeaderboardEntry {
@@ -19,8 +18,6 @@ interface LeaderboardEntry {
 
 export default function LeaderboardPage() {
   const { user } = useAuth();
-  const { reports } = useRecentReports(100);
-  const { reputation } = useProfile(reports);
   const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<'all' | 'month' | 'week'>('all');
@@ -29,62 +26,73 @@ export default function LeaderboardPage() {
     async function fetchLeaderboard() {
       setLoading(true);
       try {
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, orderBy('displayName'), limit(50));
-        const snap = await getDocs(q);
+        // Fetch all issues at once
+        const issuesSnap = await getDocs(collection(db, 'issues'));
 
-        // Build leaderboard from users + their reports
-        const entries: LeaderboardEntry[] = [];
-        for (const doc of snap.docs) {
+        // Group issues by reporter uid
+        const userMap: Record<string, { name: string; reports: number; resolved: number }> = {};
+
+        const now = new Date();
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        issuesSnap.docs.forEach((doc) => {
           const data = doc.data();
-          const reportsRef = collection(db, 'reports');
-          const reportsQuery = query(reportsRef, orderBy('createdAt'));
-          const reportsSnap = await getDocs(reportsQuery);
+          const reporterUid = data.reporter?.uid;
+          const reporterName = data.reporter?.name || 'Anonymous';
+          if (!reporterUid) return;
 
-          const userReports = reportsSnap.docs.filter(
-            (r) => r.data().userId === doc.id
-          );
-          const resolved = userReports.filter(
-            (r) => r.data().status === 'resolved'
-          );
+          // Time filter
+          let createdAt: Date | null = null;
+          if (data.createdAt?.toDate) {
+            createdAt = data.createdAt.toDate();
+          } else if (data.createdAt) {
+            createdAt = new Date(data.createdAt);
+          }
 
-          const pts = userReports.length * 10 + resolved.length * 25;
+          if (timeFilter === 'week' && createdAt && createdAt < weekAgo) return;
+          if (timeFilter === 'month' && createdAt && createdAt < monthAgo) return;
 
-          entries.push({
-            uid: doc.id,
-            displayName: data.displayName || 'Anonymous',
-            photoURL: data.photoURL || null,
-            reportsCount: userReports.length,
-            resolvedCount: resolved.length,
+          if (!userMap[reporterUid]) {
+            userMap[reporterUid] = { name: reporterName, reports: 0, resolved: 0 };
+          }
+
+          userMap[reporterUid].reports += 1;
+          if (data.status === 'resolved') {
+            userMap[reporterUid].resolved += 1;
+          }
+        });
+
+        // Build leaderboard entries
+        const entries: LeaderboardEntry[] = Object.entries(userMap).map(([uid, data]) => {
+          const pts = data.reports * 10 + data.resolved * 25;
+          return {
+            uid,
+            displayName: data.name,
+            photoURL: null,
+            reportsCount: data.reports,
+            resolvedCount: data.resolved,
             points: pts,
-            level: pts >= 1000 ? 'Legend' : pts >= 600 ? 'City Champion' : pts >= 350 ? 'Community Hero' : pts >= 150 ? 'Guardian' : pts >= 50 ? 'Volunteer' : 'Seed',
-          });
-        }
+            level:
+              pts >= 1000 ? 'Legend' :
+              pts >= 600 ? 'City Champion' :
+              pts >= 350 ? 'Community Hero' :
+              pts >= 150 ? 'Guardian' :
+              pts >= 50 ? 'Volunteer' : 'Seed',
+          };
+        });
 
+        // Sort by points descending
         entries.sort((a, b) => b.points - a.points);
         setLeaders(entries);
       } catch (err) {
         console.error('[Leaderboard] Error fetching:', err);
-        // Fallback: use current user data
-        if (user) {
-          setLeaders([
-            {
-              uid: user.uid,
-              displayName: user.displayName || 'You',
-              photoURL: user.photoURL || null,
-              reportsCount: reports.length,
-              resolvedCount: reports.filter((r) => r.status === 'resolved').length,
-              points: reputation.score,
-              level: reputation.level,
-            },
-          ]);
-        }
       }
       setLoading(false);
     }
 
     fetchLeaderboard();
-  }, [user, reports, reputation, timeFilter]);
+  }, [timeFilter]);
 
   const getMedal = (rank: number) => {
     if (rank === 0) return '🥇';
@@ -98,7 +106,7 @@ export default function LeaderboardPage() {
   return (
     <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
             <Trophy className="h-7 w-7 text-accent-500" />
@@ -123,19 +131,21 @@ export default function LeaderboardPage() {
       </div>
 
       {/* Your Rank Card */}
-      {user && (
+      {user && currentUserRank >= 0 && (
         <Card className="bg-gradient-to-r from-primary-600 to-secondary-600 dark:from-primary-700 dark:to-secondary-700 text-white !border-0">
           <CardContent className="flex items-center gap-4">
             <div className="flex items-center justify-center h-14 w-14 rounded-full bg-white/20 text-2xl font-bold">
-              {currentUserRank >= 0 ? getMedal(currentUserRank) : '—'}
+              {getMedal(currentUserRank)}
             </div>
             <div className="flex-1">
               <p className="text-sm text-white/70">Your Rank</p>
               <p className="text-xl font-bold">{user.displayName}</p>
-              <p className="text-sm text-white/80">{reputation.score} points • {reputation.level}</p>
+              <p className="text-sm text-white/80">
+                {leaders[currentUserRank]?.points} points • {leaders[currentUserRank]?.level}
+              </p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold">#{currentUserRank >= 0 ? currentUserRank + 1 : '—'}</p>
+              <p className="text-2xl font-bold">#{currentUserRank + 1}</p>
               <p className="text-xs text-white/70">of {leaders.length} heroes</p>
             </div>
           </CardContent>
