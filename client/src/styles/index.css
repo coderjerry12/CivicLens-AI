@@ -28,9 +28,9 @@
 
 /* CSS Variables — Light Mode (default) */
 :root {
-  --color-background: #f8fafc;
+  --color-background: #f0f4f8;
   --color-surface: #ffffff;
-  --color-surface-hover: #f1f5f9;
+  --color-surface-hover: #f8fafc;
   --color-border: #e2e8f0;
   --color-border-hover: #cbd5e1;
   --color-text-primary: #0f172a;
@@ -40,11 +40,11 @@
 
 /* CSS Variables — Dark Mode */
 .dark {
-  --color-background: #0f1117;
-  --color-surface: #1a1d27;
-  --color-surface-hover: #242832;
-  --color-border: #2e3340;
-  --color-border-hover: #3d4354;
+  --color-background: #0f1219;
+  --color-surface: #1a1f2e;
+  --color-surface-hover: #242a3a;
+  --color-border: #2a3040;
+  --color-border-hover: #3a4258;
   --color-text-primary: #f1f5f9;
   --color-text-secondary: #a1aab8;
   --color-text-muted: #6b7a8d;

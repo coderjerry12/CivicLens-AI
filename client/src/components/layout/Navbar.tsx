@@ -22,7 +22,7 @@ export function Navbar({ onMenuToggle, className }: NavbarProps) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-surface/80 dark:bg-neutral-900/80 dark:border-white/10 backdrop-blur-md px-4 lg:px-6',
+        'sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white dark:bg-[#141824] border-neutral-200 dark:border-[#1e2433] px-4 lg:px-6',
         className
       )}
     >
