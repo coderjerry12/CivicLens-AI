@@ -40,14 +40,14 @@
 
 /* CSS Variables — Dark Mode */
 .dark {
-  --color-background: #0f1219;
-  --color-surface: #1a1f2e;
-  --color-surface-hover: #242a3a;
+  --color-background: #ffffff;
+  --color-surface: #141824;
+  --color-surface-hover: #1a2030;
   --color-border: #2a3040;
   --color-border-hover: #3a4258;
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #a1aab8;
-  --color-text-muted: #6b7a8d;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
 }
 
 @layer utilities {
