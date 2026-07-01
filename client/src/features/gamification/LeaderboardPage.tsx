@@ -30,7 +30,7 @@ export default function LeaderboardPage() {
         const issuesSnap = await getDocs(collection(db, 'issues'));
 
         // Group issues by reporter uid
-        const userMap: Record<string, { name: string; reports: number; resolved: number }> = {};
+        const userMap: Record<string, { name: string; reports: number; resolved: number; dates: string[] }> = {};
 
         const now = new Date();
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -54,10 +54,13 @@ export default function LeaderboardPage() {
           if (timeFilter === 'month' && createdAt && createdAt < monthAgo) return;
 
           if (!userMap[reporterUid]) {
-            userMap[reporterUid] = { name: reporterName, reports: 0, resolved: 0 };
+            userMap[reporterUid] = { name: reporterName, reports: 0, resolved: 0, dates: [] };
           }
 
           userMap[reporterUid].reports += 1;
+          if (createdAt) {
+            userMap[reporterUid].dates.push(createdAt.toDateString());
+          }
           if (data.status === 'resolved') {
             userMap[reporterUid].resolved += 1;
           }
@@ -72,8 +75,21 @@ export default function LeaderboardPage() {
         });
 
         const entries: LeaderboardEntry[] = Object.entries(userMap).map(([uid, data]) => {
-          // Match the reputationService formula: reports*15 + resolved*25
-          const basePts = data.reports * 15 + data.resolved * 25;
+          // Calculate streak (same as reputationService)
+          const uniqueDates = [...new Set(data.dates)]
+            .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+          let streak = 0;
+          if (uniqueDates.length > 0) {
+            streak = 1;
+            for (let i = 0; i < uniqueDates.length - 1; i++) {
+              const diff = new Date(uniqueDates[i]).getTime() - new Date(uniqueDates[i + 1]).getTime();
+              if (diff <= 86400000 * 1.5) streak++;
+              else break;
+            }
+          }
+
+          // Match the reputationService formula: reports*15 + resolved*25 + streak*5
+          const basePts = data.reports * 15 + data.resolved * 25 + streak * 5;
           const bonus = bonusMap[uid] || 0;
           const pts = basePts + bonus;
           return {
