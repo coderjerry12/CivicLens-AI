@@ -192,11 +192,11 @@ export default function QuizPage() {
     <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
           <Brain className="h-7 w-7 text-secondary-500" />
           Eco & Community Quiz
         </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+        <p className="text-sm text-neutral-500 mt-1">
           Test your knowledge about civic issues and earn bonus points
         </p>
       </div>

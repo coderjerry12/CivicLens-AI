@@ -172,11 +172,11 @@ export default function ChallengesPage() {
     <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
           <Target className="h-7 w-7 text-primary-500" />
           Challenges & Achievements
         </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+        <p className="text-sm text-neutral-500 mt-1">
           Complete challenges to earn bonus points and unlock achievements
         </p>
       </div>

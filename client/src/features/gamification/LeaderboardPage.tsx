@@ -108,11 +108,11 @@ export default function LeaderboardPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
             <Trophy className="h-7 w-7 text-accent-500" />
             Community Heroes
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+          <p className="text-sm text-neutral-500 mt-1">
             Top contributors making our community better
           </p>
         </div>

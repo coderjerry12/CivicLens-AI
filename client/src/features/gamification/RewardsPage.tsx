@@ -76,11 +76,11 @@ export default function RewardsPage() {
     <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
           <Gift className="h-7 w-7 text-accent-500" />
           Rewards & Redemption
         </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+        <p className="text-sm text-neutral-500 mt-1">
           Redeem your points for certificates, badges, and exclusive perks
         </p>
       </div>
