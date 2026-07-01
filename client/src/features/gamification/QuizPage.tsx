@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Brain, CheckCircle, XCircle, RotateCcw, Trophy, Zap } from 'lucide-react';
 import { Card, CardContent, CardTitle, Badge, Button } from '@/components/ui';
 import { useAuth } from '@/features/auth';
@@ -125,6 +125,8 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState<(boolean | null)[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [pointsAwarded, setPointsAwarded] = useState(0);
+  const [alreadyAttemptedToday, setAlreadyAttemptedToday] = useState(false);
+  const [shuffledQuestions, setShuffledQuestions] = useState<QuizQuestion[]>([]);
 
   const categories = [...new Set(QUIZ_QUESTIONS.map((q) => q.category))];
 
@@ -132,7 +134,38 @@ export default function QuizPage() {
     ? QUIZ_QUESTIONS.filter((q) => q.category === selectedCategory)
     : QUIZ_QUESTIONS;
 
+  // Check if user already took quiz today (from quiz history in Firestore)
+  useEffect(() => {
+    async function checkTodayAttempt() {
+      if (!user) return;
+      try {
+        const { loadUserPoints } = await import('@/services/pointsService');
+        const data = await loadUserPoints(user.uid);
+        const today = new Date().toISOString().split('T')[0];
+        const attemptedToday = data.quizHistory.some(
+          (h) => h.date.split('T')[0] === today
+        );
+        setAlreadyAttemptedToday(attemptedToday);
+      } catch { /* ignore */ }
+    }
+    checkTodayAttempt();
+  }, [user]);
+
+  // Shuffle questions for randomized order
+  const shuffleArray = (arr: QuizQuestion[]) => {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
   const startQuiz = useCallback(() => {
+    const questions = selectedCategory
+      ? QUIZ_QUESTIONS.filter((q) => q.category === selectedCategory)
+      : QUIZ_QUESTIONS;
+    setShuffledQuestions(shuffleArray(questions));
     setState('playing');
     setCurrentQuestion(0);
     setSelectedAnswer(null);
@@ -140,27 +173,31 @@ export default function QuizPage() {
     setScore(0);
     setAnswers([]);
     setPointsAwarded(0);
-  }, []);
+  }, [selectedCategory]);
+
+  // Use shuffled questions during gameplay
+  const activeQuestions = state === 'playing' || state === 'finished' ? shuffledQuestions : filteredQuestions;
 
   const handleAnswer = (answerIdx: number) => {
-    if (selectedAnswer !== null) return; // Already answered
+    if (selectedAnswer !== null) return;
     setSelectedAnswer(answerIdx);
     setShowExplanation(true);
 
-    const isCorrect = answerIdx === filteredQuestions[currentQuestion].correctAnswer;
+    const isCorrect = answerIdx === activeQuestions[currentQuestion].correctAnswer;
     if (isCorrect) setScore((s) => s + 1);
     setAnswers((prev) => [...prev, isCorrect]);
   };
 
   const nextQuestion = async () => {
-    if (currentQuestion + 1 >= filteredQuestions.length) {
+    if (currentQuestion + 1 >= activeQuestions.length) {
       setState('finished');
-      // Save quiz result to Firestore and award points
-      if (user) {
+      // Save quiz result — only award points if not already attempted today
+      if (user && !alreadyAttemptedToday) {
         try {
-          const finalScore = score + (selectedAnswer === filteredQuestions[currentQuestion].correctAnswer ? 1 : 0);
-          const result = await recordQuizResult(user.uid, finalScore, filteredQuestions.length);
+          const finalScore = score + (selectedAnswer === activeQuestions[currentQuestion].correctAnswer ? 1 : 0);
+          const result = await recordQuizResult(user.uid, finalScore, activeQuestions.length);
           setPointsAwarded(result.pointsEarned);
+          setAlreadyAttemptedToday(true);
         } catch (err) {
           console.error('[Quiz] Failed to save result:', err);
         }
@@ -173,7 +210,7 @@ export default function QuizPage() {
   };
 
   const getScoreEmoji = () => {
-    const pct = (score / filteredQuestions.length) * 100;
+    const pct = (score / activeQuestions.length) * 100;
     if (pct >= 90) return '🏆';
     if (pct >= 70) return '🌟';
     if (pct >= 50) return '👍';
@@ -181,7 +218,7 @@ export default function QuizPage() {
   };
 
   const getScoreMessage = () => {
-    const pct = (score / filteredQuestions.length) * 100;
+    const pct = (score / activeQuestions.length) * 100;
     if (pct >= 90) return 'Outstanding! You\'re a civic genius!';
     if (pct >= 70) return 'Great job! You know your community well.';
     if (pct >= 50) return 'Good effort! Keep learning about civic issues.';
@@ -240,10 +277,15 @@ export default function QuizPage() {
                   Answer questions about environmental awareness, civic responsibility, and community issues.
                   Earn +20 points for a perfect score!
                 </p>
-                <Button size="lg" onClick={startQuiz}>
+                <Button size="lg" onClick={startQuiz} disabled={alreadyAttemptedToday}>
                   <Zap className="h-4 w-4" />
-                  Start Quiz ({filteredQuestions.length} Questions)
+                  {alreadyAttemptedToday ? 'Already Attempted Today' : `Start Quiz (${filteredQuestions.length} Questions)`}
                 </Button>
+                {alreadyAttemptedToday && (
+                  <p className="text-xs text-neutral-400 mt-2">
+                    You can earn points again tomorrow. Come back for a new attempt!
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -280,7 +322,7 @@ export default function QuizPage() {
           {/* Progress */}
           <div className="flex items-center justify-between mb-4">
             <Badge variant="neutral" size="sm">
-              Question {currentQuestion + 1} of {filteredQuestions.length}
+              Question {currentQuestion + 1} of {activeQuestions.length}
             </Badge>
             <Badge variant="primary" size="sm">
               Score: {score}/{currentQuestion + (selectedAnswer !== null ? 1 : 0)}
@@ -291,25 +333,25 @@ export default function QuizPage() {
           <div className="h-2 w-full rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden mb-6">
             <div
               className="h-full rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 transition-all duration-500"
-              style={{ width: `${((currentQuestion + 1) / filteredQuestions.length) * 100}%` }}
+              style={{ width: `${((currentQuestion + 1) / activeQuestions.length) * 100}%` }}
             />
           </div>
 
           {/* Category Badge */}
           <Badge variant="secondary" size="sm" className="mb-3">
-            {filteredQuestions[currentQuestion].category}
+            {activeQuestions[currentQuestion].category}
           </Badge>
 
           {/* Question */}
           <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-6">
-            {filteredQuestions[currentQuestion].question}
+            {activeQuestions[currentQuestion].question}
           </h2>
 
           {/* Options */}
           <div className="space-y-3">
-            {filteredQuestions[currentQuestion].options.map((option, idx) => {
+            {activeQuestions[currentQuestion].options.map((option, idx) => {
               const isSelected = selectedAnswer === idx;
-              const isCorrect = idx === filteredQuestions[currentQuestion].correctAnswer;
+              const isCorrect = idx === activeQuestions[currentQuestion].correctAnswer;
               const showResult = selectedAnswer !== null;
 
               return (
@@ -344,7 +386,7 @@ export default function QuizPage() {
             <div className="mt-4 p-4 rounded-[14px] bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700">
               <p className="text-sm text-neutral-600 dark:text-neutral-300">
                 <span className="font-semibold">💡 Explanation:</span>{' '}
-                {filteredQuestions[currentQuestion].explanation}
+                {activeQuestions[currentQuestion].explanation}
               </p>
             </div>
           )}
@@ -353,7 +395,7 @@ export default function QuizPage() {
           {selectedAnswer !== null && (
             <div className="mt-6 flex justify-end">
               <Button onClick={nextQuestion}>
-                {currentQuestion + 1 >= filteredQuestions.length ? 'See Results' : 'Next Question →'}
+                {currentQuestion + 1 >= activeQuestions.length ? 'See Results' : 'Next Question →'}
               </Button>
             </div>
           )}
@@ -368,7 +410,7 @@ export default function QuizPage() {
             Quiz Complete!
           </h2>
           <p className="text-lg text-neutral-600 dark:text-neutral-400 mb-2">
-            You scored <span className="font-bold text-primary-600 dark:text-primary-400">{score}</span> out of <span className="font-bold">{filteredQuestions.length}</span>
+            You scored <span className="font-bold text-primary-600 dark:text-primary-400">{score}</span> out of <span className="font-bold">{activeQuestions.length}</span>
           </p>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
             {getScoreMessage()}
@@ -392,7 +434,7 @@ export default function QuizPage() {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 dark:bg-primary-500/10 mb-6">
             <Trophy className="h-4 w-4 text-primary-600 dark:text-primary-400" />
             <span className="text-sm font-bold text-primary-700 dark:text-primary-300">
-              +{pointsAwarded} points earned
+              {pointsAwarded > 0 ? `+${pointsAwarded} points earned` : 'Practice mode — no points (1 attempt/day)'}
             </span>
           </div>
 
