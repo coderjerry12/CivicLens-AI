@@ -11,6 +11,7 @@ export interface IssueReport {
   department: string;
   status: 'pending' | 'validated' | 'in_progress' | 'resolved' | 'closed';
   imageDataURL: string;
+  videoDataURL?: string;
   location: {
     latitude: number;
     longitude: number;
@@ -48,6 +49,7 @@ export interface SubmissionData {
   severity: string;
   department: string;
   imageDataURL: string;
+  videoDataURL?: string;
   location: {
     latitude: number;
     longitude: number;

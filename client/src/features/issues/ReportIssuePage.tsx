@@ -13,6 +13,7 @@ import {
   RefreshCw,
   XCircle,
   Mic,
+  Video,
 } from 'lucide-react';
 import {
   Card,
@@ -41,6 +42,24 @@ export default function ReportIssuePage() {
   const voice = useVoiceReport();
   const [duplicates, setDuplicates] = useState<PotentialDuplicate[]>([]);
   const [checkingDuplicates, setCheckingDuplicates] = useState(false);
+  const [videoData, setVideoData] = useState<string | null>(null);
+
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Limit to 10MB for base64 storage
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Video must be under 10MB. Please use a shorter clip.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setVideoData(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleImageChange = (image: UploadedImage | null) => {
     setUploadedImage(image);
@@ -107,6 +126,7 @@ export default function ReportIssuePage() {
       severity: reviewedData.severity,
       department: reviewedData.department,
       imageDataURL: uploadState.dataURL,
+      videoDataURL: videoData || undefined,
       location: {
         latitude: selectedLocation.latitude,
         longitude: selectedLocation.longitude,
@@ -364,6 +384,53 @@ export default function ReportIssuePage() {
                     <p className="text-xs text-neutral-600 dark:text-neutral-400">
                       For best AI results: capture the full issue clearly, include surrounding context, and ensure good lighting.
                     </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Video Upload Card (Optional) */}
+            <Card>
+              <CardTitle className="flex items-center gap-2">
+                <Video className="h-5 w-5 text-secondary-600 dark:text-secondary-400" />
+                Upload Video
+                <Badge variant="neutral" size="sm" className="ml-auto">Optional</Badge>
+              </CardTitle>
+              <CardDescription>
+                Add a short video clip (max 30s) for additional evidence.
+              </CardDescription>
+              <CardContent className="mt-4">
+                {!videoData ? (
+                  <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-[14px] cursor-pointer hover:border-primary-400 hover:bg-primary-50/50 dark:hover:bg-primary-500/5 transition-all">
+                    <Video className="h-8 w-8 text-neutral-400 mb-2" />
+                    <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
+                      Click to upload video
+                    </p>
+                    <p className="text-xs text-neutral-400 mt-1">MP4, WebM, MOV • Max 30 seconds</p>
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime"
+                      className="hidden"
+                      onChange={handleVideoChange}
+                    />
+                  </label>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="rounded-[14px] overflow-hidden bg-black">
+                      <video
+                        src={videoData}
+                        controls
+                        className="w-full max-h-[200px] object-contain"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Badge variant="success" size="sm">
+                        <CheckCircle2 className="h-3 w-3" /> Video attached
+                      </Badge>
+                      <Button variant="ghost" size="sm" onClick={() => setVideoData(null)}>
+                        Remove
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardContent>

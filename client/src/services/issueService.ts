@@ -34,6 +34,7 @@ export async function submitIssueReport(options: SubmitIssueOptions): Promise<Su
     department: data.department,
     status: 'pending',
     imageDataURL: data.imageDataURL,
+    ...(data.videoDataURL && { videoDataURL: data.videoDataURL }),
     location: {
       latitude: data.location.latitude,
       longitude: data.location.longitude,
