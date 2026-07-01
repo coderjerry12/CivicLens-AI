@@ -30,6 +30,12 @@ const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
 const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'));
 const CommunityFeedPage = lazy(() => import('@/features/community/CommunityFeedPage'));
 
+// Gamification
+const LeaderboardPage = lazy(() => import('@/features/gamification/LeaderboardPage'));
+const ChallengesPage = lazy(() => import('@/features/gamification/ChallengesPage'));
+const QuizPage = lazy(() => import('@/features/gamification/QuizPage'));
+const RewardsPage = lazy(() => import('@/features/gamification/RewardsPage'));
+
 // Misc
 const NotFound = lazy(() => import('@/features/misc/NotFoundPage'));
 
@@ -76,6 +82,10 @@ export const router = createBrowserRouter([
       { path: 'analytics', element: <Lazy Component={AnalyticsPage} /> },
       { path: 'settings', element: <Lazy Component={SettingsPage} /> },
       { path: 'profile', element: <Lazy Component={ProfilePage} /> },
+      { path: 'leaderboard', element: <Lazy Component={LeaderboardPage} /> },
+      { path: 'challenges', element: <Lazy Component={ChallengesPage} /> },
+      { path: 'quiz', element: <Lazy Component={QuizPage} /> },
+      { path: 'rewards', element: <Lazy Component={RewardsPage} /> },
     ],
   },
   // Auth routes (public)

@@ -10,11 +10,14 @@ import {
   ChevronLeft,
   Sparkles,
   LogOut,
+  Trophy,
+  Target,
+  Brain,
+  Gift,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { APP_NAME } from '@/lib/constants';
 import { useAuth } from '@/features/auth';
-import { Avatar } from '@/components/ui/Avatar';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -29,6 +32,10 @@ const iconMap: Record<string, React.ElementType> = {
   Bell,
   BarChart3,
   Settings,
+  Trophy,
+  Target,
+  Brain,
+  Gift,
 };
 
 interface NavItem {
@@ -43,6 +50,10 @@ const citizenNav: NavItem[] = [
   { label: 'My Issues', path: '/app/issues', icon: 'ClipboardList' },
   { label: 'Community', path: '/app/community', icon: 'Map' },
   { label: 'Map', path: '/app/map', icon: 'Map' },
+  { label: 'Leaderboard', path: '/app/leaderboard', icon: 'Trophy' },
+  { label: 'Challenges', path: '/app/challenges', icon: 'Target' },
+  { label: 'Quiz', path: '/app/quiz', icon: 'Brain' },
+  { label: 'Rewards', path: '/app/rewards', icon: 'Gift' },
   { label: 'Notifications', path: '/app/notifications', icon: 'Bell' },
 ];
 
@@ -112,32 +123,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Bottom section */}
       <div className="border-t border-border p-3 space-y-1">
-        {/* User info */}
-        {user && !collapsed && (
-          <div className="flex items-center gap-3 rounded-[14px] px-3 py-2 mb-2">
-            <Avatar fallback={user.displayName || 'U'} size="sm" src={user.photoURL || undefined} />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-text-primary truncate">{user.displayName}</p>
-              <p className="text-xs text-text-muted capitalize">{user.role}</p>
-            </div>
-          </div>
-        )}
-
-        <NavLink
-          to="/app/settings"
-          className={({ isActive }) =>
-            cn(
-              'flex items-center gap-3 rounded-[14px] px-3 py-2.5 text-sm font-medium transition-all duration-200',
-              isActive
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
-            )
-          }
-        >
-          <Settings className="h-5 w-5 shrink-0" />
-          {!collapsed && <span>Settings</span>}
-        </NavLink>
-
         <button
           onClick={handleSignOut}
           className="flex w-full items-center gap-3 rounded-[14px] px-3 py-2.5 text-sm font-medium text-neutral-600 hover:bg-danger-50 hover:text-danger-700 transition-all duration-200"
