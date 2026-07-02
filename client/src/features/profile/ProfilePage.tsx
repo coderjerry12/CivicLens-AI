@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Trophy, Star, Target, Calendar, Pencil, Check, X } from 'lucide-react';
 import { Card, CardContent, CardTitle, Badge, Avatar, Skeleton } from '@/components/ui';
 import { useAuth } from '@/features/auth';
@@ -9,6 +9,15 @@ import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
+interface AuthorityIssue {
+  documentId: string;
+  title: string;
+  status: string;
+  category: string;
+  severity: string;
+  createdAt: Date;
+}
+
 export default function ProfilePage() {
   const { user } = useAuth();
   const { reports, loading } = useRecentReports(100);
@@ -17,6 +26,34 @@ export default function ProfilePage() {
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState(user?.displayName || '');
   const [saving, setSaving] = useState(false);
+  const [authorityIssues, setAuthorityIssues] = useState<AuthorityIssue[]>([]);
+
+  // Fetch all issues for authority users
+  useEffect(() => {
+    if (user?.role !== 'authority') return;
+    async function fetchAllIssues() {
+      try {
+        const snap = await getDocs(collection(db, 'issues'));
+        const issues: AuthorityIssue[] = [];
+        snap.forEach((d) => {
+          const data = d.data();
+          issues.push({
+            documentId: d.id,
+            title: data.title || 'Untitled',
+            status: data.status || 'pending',
+            category: data.category || 'other',
+            severity: data.severity || 'medium',
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+          });
+        });
+        issues.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        setAuthorityIssues(issues);
+      } catch (err) {
+        console.error('[Profile] Authority issues fetch failed:', err);
+      }
+    }
+    fetchAllIssues();
+  }, [user]);
 
   const handleSaveName = async () => {
     if (!newName.trim() || !auth.currentUser) return;
@@ -300,10 +337,10 @@ export default function ProfilePage() {
       <>
         {/* Authority Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <MiniStat icon="📥" label="Total Assigned" value={reports.length} />
-          <MiniStat icon="✅" label="Resolved" value={reports.filter((r) => r.status === 'resolved').length} />
-          <MiniStat icon="⏳" label="In Progress" value={reports.filter((r) => r.status === 'in_progress').length} />
-          <MiniStat icon="📊" label="Resolution Rate" value={reports.length > 0 ? `${Math.round((reports.filter((r) => r.status === 'resolved').length / reports.length) * 100)}%` : '0%'} />
+          <MiniStat icon="📥" label="Total Issues" value={authorityIssues.length} />
+          <MiniStat icon="✅" label="Resolved" value={authorityIssues.filter((r) => r.status === 'resolved').length} />
+          <MiniStat icon="⏳" label="In Progress" value={authorityIssues.filter((r) => r.status === 'in_progress').length} />
+          <MiniStat icon="📊" label="Resolution Rate" value={authorityIssues.length > 0 ? `${Math.round((authorityIssues.filter((r) => r.status === 'resolved').length / authorityIssues.length) * 100)}%` : '0%'} />
         </div>
 
         {/* Performance Overview */}
@@ -317,13 +354,13 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Issue Resolution Rate</span>
                 <span className="text-xs font-bold text-primary-600 dark:text-primary-400">
-                  {reports.length > 0 ? Math.round((reports.filter((r) => r.status === 'resolved').length / reports.length) * 100) : 0}%
+                  {authorityIssues.length > 0 ? Math.round((authorityIssues.filter((r) => r.status === 'resolved').length / authorityIssues.length) * 100) : 0}%
                 </span>
               </div>
               <div className="h-2.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-success-500 to-primary-500 transition-all duration-1000"
-                  style={{ width: `${reports.length > 0 ? Math.round((reports.filter((r) => r.status === 'resolved').length / reports.length) * 100) : 0}%` }}
+                  style={{ width: `${authorityIssues.length > 0 ? Math.round((authorityIssues.filter((r) => r.status === 'resolved').length / authorityIssues.length) * 100) : 0}%` }}
                 />
               </div>
             </div>
@@ -331,13 +368,13 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Response Efficiency</span>
                 <span className="text-xs font-bold text-secondary-600 dark:text-secondary-400">
-                  {reports.length > 0 ? Math.round((reports.filter((r) => r.status !== 'pending').length / reports.length) * 100) : 0}%
+                  {authorityIssues.length > 0 ? Math.round((authorityIssues.filter((r) => r.status !== 'pending').length / authorityIssues.length) * 100) : 0}%
                 </span>
               </div>
               <div className="h-2.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-secondary-500 to-accent-500 transition-all duration-1000"
-                  style={{ width: `${reports.length > 0 ? Math.round((reports.filter((r) => r.status !== 'pending').length / reports.length) * 100) : 0}%` }}
+                  style={{ width: `${authorityIssues.length > 0 ? Math.round((authorityIssues.filter((r) => r.status !== 'pending').length / authorityIssues.length) * 100) : 0}%` }}
                 />
               </div>
             </div>
@@ -377,22 +414,22 @@ export default function ProfilePage() {
               Recent Activity
             </CardTitle>
             <CardContent className="mt-4 space-y-3">
-              {reports.length === 0 ? (
+              {authorityIssues.length === 0 ? (
                 <p className="text-xs text-neutral-400 text-center py-4">No activity yet</p>
               ) : (
-                reports.slice(0, 5).map((report) => (
-                  <div key={report.documentId} className="flex items-center gap-3 p-2 rounded-[10px] hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+                authorityIssues.slice(0, 5).map((issue) => (
+                  <div key={issue.documentId} className="flex items-center gap-3 p-2 rounded-[10px] hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
                     <div className={cn(
                       'h-2 w-2 rounded-full shrink-0',
-                      report.status === 'resolved' ? 'bg-success-500' :
-                      report.status === 'in_progress' ? 'bg-primary-500' : 'bg-neutral-300'
+                      issue.status === 'resolved' ? 'bg-success-500' :
+                      issue.status === 'in_progress' ? 'bg-primary-500' : 'bg-neutral-300'
                     )} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate">{report.title}</p>
-                      <p className="text-[10px] text-neutral-400">{formatRelativeTime(report.createdAt)}</p>
+                      <p className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate">{issue.title}</p>
+                      <p className="text-[10px] text-neutral-400">{formatRelativeTime(issue.createdAt)}</p>
                     </div>
-                    <Badge variant={report.status === 'resolved' ? 'success' : report.status === 'in_progress' ? 'primary' : 'neutral'} size="sm">
-                      {report.status}
+                    <Badge variant={issue.status === 'resolved' ? 'success' : issue.status === 'in_progress' ? 'primary' : 'neutral'} size="sm">
+                      {issue.status}
                     </Badge>
                   </div>
                 ))
