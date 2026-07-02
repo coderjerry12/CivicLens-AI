@@ -58,17 +58,22 @@ export default function AnalyticsPage() {
               7-Day Trend
             </CardTitle>
             <CardContent className="mt-4">
-              <div className="flex items-end gap-1 h-32">
-                {data.trendData.map((point) => (
-                  <div key={point.date} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="w-full flex flex-col items-center gap-0.5 flex-1 justify-end">
-                      <div className="w-full max-w-[24px] bg-primary-500 rounded-t-sm transition-all duration-500" style={{ height: `${Math.max(point.reported * 20, 4)}px` }} title={`${point.reported} reported`} />
-                      <div className="w-full max-w-[24px] bg-success-400 rounded-t-sm transition-all duration-500" style={{ height: `${Math.max(point.resolved * 20, 2)}px` }} title={`${point.resolved} resolved`} />
-                    </div>
-                    <span className="text-[9px] text-neutral-400 mt-1">{point.date.split(' ')[1]}</span>
+              {(() => {
+                const maxVal = Math.max(...data.trendData.map((p) => Math.max(p.reported, p.resolved)), 1);
+                return (
+                  <div className="flex items-end gap-1 h-40">
+                    {data.trendData.map((point) => (
+                      <div key={point.date} className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full flex flex-col items-center gap-0.5 flex-1 justify-end">
+                          <div className="w-full max-w-[24px] bg-primary-500 rounded-t-sm transition-all duration-500" style={{ height: `${Math.max((point.reported / maxVal) * 100, 3)}%` }} title={`${point.reported} reported`} />
+                          <div className="w-full max-w-[24px] bg-success-400 rounded-t-sm transition-all duration-500" style={{ height: `${Math.max((point.resolved / maxVal) * 100, 2)}%` }} title={`${point.resolved} resolved`} />
+                        </div>
+                        <span className="text-[9px] text-neutral-400 mt-1">{point.date.split(' ')[1]}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
               <div className="flex items-center gap-4 mt-3 justify-center">
                 <div className="flex items-center gap-1.5"><div className="h-2.5 w-2.5 rounded-sm bg-primary-500" /><span className="text-[10px] text-neutral-500">Reported</span></div>
                 <div className="flex items-center gap-1.5"><div className="h-2.5 w-2.5 rounded-sm bg-success-400" /><span className="text-[10px] text-neutral-500">Resolved</span></div>

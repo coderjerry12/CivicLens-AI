@@ -89,14 +89,23 @@ export function useAIAssistant() {
     setIsTyping(false);
   }, [user, fetchLiveStats]);
 
-  const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
-  const close = useCallback(() => {
-    setIsOpen(false);
-    // Reset chat history on close
+  const resetMessages = useCallback(() => {
     setMessages([
       { id: Date.now().toString(), role: 'assistant', content: `Hi ${user?.displayName?.split(' ')[0] || 'there'}! I'm your CivicLens AI assistant. How can I help you today?`, timestamp: new Date() },
     ]);
   }, [user]);
+
+  const toggle = useCallback(() => {
+    setIsOpen((prev) => {
+      if (prev) resetMessages();
+      return !prev;
+    });
+  }, [resetMessages]);
+
+  const close = useCallback(() => {
+    setIsOpen(false);
+    resetMessages();
+  }, [resetMessages]);
 
   return { messages, isOpen, isTyping, sendMessage, toggle, close };
 }
