@@ -60,24 +60,72 @@ export default function AnalyticsPage() {
             <CardContent className="mt-4">
               {(() => {
                 const maxVal = Math.max(...data.trendData.map((p) => Math.max(p.reported, p.resolved)), 1);
-                const maxHeight = 120; // px
+                const maxHeight = 140;
                 return (
-                  <div className="flex items-end gap-1" style={{ height: `${maxHeight + 24}px` }}>
-                    {data.trendData.map((point) => (
-                      <div key={point.date} className="flex-1 flex flex-col items-center">
-                        <div className="w-full flex flex-col items-center gap-0.5 justify-end" style={{ height: `${maxHeight}px` }}>
-                          <div className="w-full max-w-[24px] bg-primary-500 rounded-t-sm transition-all duration-500" style={{ height: `${Math.max((point.reported / maxVal) * maxHeight, 4)}px` }} title={`${point.reported} reported`} />
-                          <div className="w-full max-w-[24px] bg-success-400 rounded-t-sm transition-all duration-500" style={{ height: `${Math.max((point.resolved / maxVal) * maxHeight, 2)}px` }} title={`${point.resolved} resolved`} />
-                        </div>
-                        <span className="text-[9px] text-neutral-400 mt-1">{point.date.split(' ')[1]}</span>
+                  <>
+                    {/* Chart area */}
+                    <div className="relative">
+                      {/* Y-axis grid lines */}
+                      <div className="absolute inset-0 flex flex-col justify-between pointer-events-none" style={{ height: `${maxHeight}px` }}>
+                        {[maxVal, Math.round(maxVal * 0.5), 0].map((val, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <span className="text-[9px] text-neutral-400 w-5 text-right">{val}</span>
+                            <div className="flex-1 border-t border-dashed border-neutral-200 dark:border-neutral-700" />
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+
+                      {/* Bars */}
+                      <div className="flex items-end gap-3 pl-7" style={{ height: `${maxHeight}px` }}>
+                        {data.trendData.map((point) => (
+                          <div key={point.date} className="flex-1 flex flex-col items-center group">
+                            {/* Tooltip on hover */}
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-medium text-neutral-600 dark:text-neutral-300 mb-1">
+                              {point.reported}/{point.resolved}
+                            </div>
+                            <div className="w-full flex items-end gap-1 justify-center" style={{ height: `${maxHeight - 20}px` }}>
+                              {/* Reported bar */}
+                              <div
+                                className="w-5 bg-gradient-to-t from-primary-600 to-primary-400 rounded-t-md transition-all duration-500 hover:from-primary-700 hover:to-primary-500"
+                                style={{ height: `${Math.max((point.reported / maxVal) * (maxHeight - 20), 4)}px` }}
+                                title={`${point.reported} reported`}
+                              />
+                              {/* Resolved bar */}
+                              <div
+                                className="w-5 bg-gradient-to-t from-success-500 to-success-300 rounded-t-md transition-all duration-500 hover:from-success-600 hover:to-success-400"
+                                style={{ height: `${Math.max((point.resolved / maxVal) * (maxHeight - 20), 4)}px` }}
+                                title={`${point.resolved} resolved`}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* X-axis labels */}
+                    <div className="flex gap-3 pl-7 mt-2 border-t border-neutral-200 dark:border-neutral-700 pt-2">
+                      {data.trendData.map((point) => (
+                        <div key={point.date} className="flex-1 text-center">
+                          <span className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">
+                            {point.date.split(' ')[1]}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 );
               })()}
-              <div className="flex items-center gap-4 mt-3 justify-center">
-                <div className="flex items-center gap-1.5"><div className="h-2.5 w-2.5 rounded-sm bg-primary-500" /><span className="text-[10px] text-neutral-500">Reported</span></div>
-                <div className="flex items-center gap-1.5"><div className="h-2.5 w-2.5 rounded-sm bg-success-400" /><span className="text-[10px] text-neutral-500">Resolved</span></div>
+
+              {/* Legend */}
+              <div className="flex items-center gap-6 mt-4 justify-center">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-sm bg-gradient-to-t from-primary-600 to-primary-400" />
+                  <span className="text-xs text-neutral-600 dark:text-neutral-400">Reported</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-sm bg-gradient-to-t from-success-500 to-success-300" />
+                  <span className="text-xs text-neutral-600 dark:text-neutral-400">Resolved</span>
+                </div>
               </div>
             </CardContent>
           </Card>
