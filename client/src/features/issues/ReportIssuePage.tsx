@@ -637,7 +637,11 @@ export default function ReportIssuePage() {
             ))}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setDuplicates([])}>
+            <Button variant="outline" size="sm" onClick={() => {
+              if (duplicates.length > 0) {
+                navigate(`/app/issues/${duplicates[0].documentId}`);
+              }
+            }}>
               View Existing Issues
             </Button>
             <Button size="sm" onClick={performSubmit}>
