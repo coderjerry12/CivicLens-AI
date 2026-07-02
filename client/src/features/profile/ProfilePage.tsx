@@ -4,7 +4,7 @@ import { Card, CardContent, CardTitle, Badge, Avatar, Skeleton } from '@/compone
 import { useAuth } from '@/features/auth';
 import { useRecentReports, useProfile, usePoints } from '@/hooks';
 import { LEVEL_THRESHOLDS } from '@/types/reputation';
-import { cn } from '@/lib/utils';
+import { cn, formatRelativeTime } from '@/lib/utils';
 import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
@@ -292,6 +292,114 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
+
+      {/* Authority Profile Sections */}
+      {user?.role === 'authority' && (
+      <>
+        {/* Authority Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <MiniStat icon="📥" label="Total Assigned" value={reports.length} />
+          <MiniStat icon="✅" label="Resolved" value={reports.filter((r) => r.status === 'resolved').length} />
+          <MiniStat icon="⏳" label="In Progress" value={reports.filter((r) => r.status === 'in_progress').length} />
+          <MiniStat icon="📊" label="Resolution Rate" value={reports.length > 0 ? `${Math.round((reports.filter((r) => r.status === 'resolved').length / reports.length) * 100)}%` : '0%'} />
+        </div>
+
+        {/* Performance Overview */}
+        <Card>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-primary-500" />
+            Performance Overview
+          </CardTitle>
+          <CardContent className="mt-4 space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Issue Resolution Rate</span>
+                <span className="text-xs font-bold text-primary-600 dark:text-primary-400">
+                  {reports.length > 0 ? Math.round((reports.filter((r) => r.status === 'resolved').length / reports.length) * 100) : 0}%
+                </span>
+              </div>
+              <div className="h-2.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-success-500 to-primary-500 transition-all duration-1000"
+                  style={{ width: `${reports.length > 0 ? Math.round((reports.filter((r) => r.status === 'resolved').length / reports.length) * 100) : 0}%` }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Response Efficiency</span>
+                <span className="text-xs font-bold text-secondary-600 dark:text-secondary-400">
+                  {reports.length > 0 ? Math.round((reports.filter((r) => r.status !== 'pending').length / reports.length) * 100) : 0}%
+                </span>
+              </div>
+              <div className="h-2.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-secondary-500 to-accent-500 transition-all duration-1000"
+                  style={{ width: `${reports.length > 0 ? Math.round((reports.filter((r) => r.status !== 'pending').length / reports.length) * 100) : 0}%` }}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Department & Responsibilities */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-accent-500" />
+              Role & Access
+            </CardTitle>
+            <CardContent className="mt-4 space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-[12px] bg-neutral-50 dark:bg-neutral-800/50">
+                <span className="text-xs text-neutral-600 dark:text-neutral-400">Role</span>
+                <Badge variant="accent" size="sm">Authority</Badge>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-[12px] bg-neutral-50 dark:bg-neutral-800/50">
+                <span className="text-xs text-neutral-600 dark:text-neutral-400">Access Level</span>
+                <Badge variant="primary" size="sm">Full Management</Badge>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-[12px] bg-neutral-50 dark:bg-neutral-800/50">
+                <span className="text-xs text-neutral-600 dark:text-neutral-400">Permissions</span>
+                <Badge variant="success" size="sm">Resolve & Assign</Badge>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-[12px] bg-neutral-50 dark:bg-neutral-800/50">
+                <span className="text-xs text-neutral-600 dark:text-neutral-400">Analytics</span>
+                <Badge variant="secondary" size="sm">Full Dashboard</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-secondary-500" />
+              Recent Activity
+            </CardTitle>
+            <CardContent className="mt-4 space-y-3">
+              {reports.length === 0 ? (
+                <p className="text-xs text-neutral-400 text-center py-4">No activity yet</p>
+              ) : (
+                reports.slice(0, 5).map((report) => (
+                  <div key={report.documentId} className="flex items-center gap-3 p-2 rounded-[10px] hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+                    <div className={cn(
+                      'h-2 w-2 rounded-full shrink-0',
+                      report.status === 'resolved' ? 'bg-success-500' :
+                      report.status === 'in_progress' ? 'bg-primary-500' : 'bg-neutral-300'
+                    )} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate">{report.title}</p>
+                      <p className="text-[10px] text-neutral-400">{formatRelativeTime(report.createdAt)}</p>
+                    </div>
+                    <Badge variant={report.status === 'resolved' ? 'success' : report.status === 'in_progress' ? 'primary' : 'neutral'} size="sm">
+                      {report.status}
+                    </Badge>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </>
       )}
     </div>
