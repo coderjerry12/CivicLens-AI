@@ -118,16 +118,24 @@ export default function ProfilePage() {
                 </div>
               )}
               <p className="text-primary-100 text-sm">{user?.email}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-2xl">{currentLevelData.icon}</span>
-                <span className="text-sm font-semibold">{reputation.level}</span>
-                <span className="text-primary-200 text-xs">• {totalEarned} points</span>
-              </div>
+              {user?.role !== 'authority' && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-2xl">{currentLevelData.icon}</span>
+                  <span className="text-sm font-semibold">{reputation.level}</span>
+                  <span className="text-primary-200 text-xs">• {totalEarned} points</span>
+                </div>
+              )}
+              {user?.role === 'authority' && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant="accent" size="sm">Authority</Badge>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Level Progress */}
+        {/* Level Progress — citizens only */}
+        {user?.role !== 'authority' && (
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
@@ -144,16 +152,20 @@ export default function ProfilePage() {
             />
           </div>
         </CardContent>
+        )}
       </Card>
 
-      {/* Stats Breakdown */}
+      {/* Stats Breakdown — citizens only */}
+      {user?.role !== 'authority' && (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MiniStat icon="📋" label="Reports" value={reputation.breakdown.reportsSubmitted} />
         <MiniStat icon="✅" label="Resolved" value={reputation.breakdown.resolvedReports} />
         <MiniStat icon="🔥" label="Streak" value={`${reputation.breakdown.streakDays}d`} />
         <MiniStat icon="⭐" label="Score" value={totalEarned} />
       </div>
+      )}
 
+      {user?.role !== 'authority' && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Badges */}
         <Card>
@@ -218,8 +230,11 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </div>
+      )}
 
-      {/* Contribution Matrix */}
+      {/* Contribution Matrix — citizens only */}
+      {user?.role !== 'authority' && (
+      <>
       <Card>
         <CardTitle className="flex items-center justify-between">
           <div>
@@ -277,6 +292,8 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   );
 }
