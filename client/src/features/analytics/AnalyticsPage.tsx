@@ -60,13 +60,14 @@ export default function AnalyticsPage() {
             <CardContent className="mt-4">
               {(() => {
                 const maxVal = Math.max(...data.trendData.map((p) => Math.max(p.reported, p.resolved)), 1);
+                const maxHeight = 120; // px
                 return (
-                  <div className="flex items-end gap-1 h-40">
+                  <div className="flex items-end gap-1" style={{ height: `${maxHeight + 24}px` }}>
                     {data.trendData.map((point) => (
-                      <div key={point.date} className="flex-1 flex flex-col items-center gap-1">
-                        <div className="w-full flex flex-col items-center gap-0.5 flex-1 justify-end">
-                          <div className="w-full max-w-[24px] bg-primary-500 rounded-t-sm transition-all duration-500" style={{ height: `${Math.max((point.reported / maxVal) * 100, 3)}%` }} title={`${point.reported} reported`} />
-                          <div className="w-full max-w-[24px] bg-success-400 rounded-t-sm transition-all duration-500" style={{ height: `${Math.max((point.resolved / maxVal) * 100, 2)}%` }} title={`${point.resolved} resolved`} />
+                      <div key={point.date} className="flex-1 flex flex-col items-center">
+                        <div className="w-full flex flex-col items-center gap-0.5 justify-end" style={{ height: `${maxHeight}px` }}>
+                          <div className="w-full max-w-[24px] bg-primary-500 rounded-t-sm transition-all duration-500" style={{ height: `${Math.max((point.reported / maxVal) * maxHeight, 4)}px` }} title={`${point.reported} reported`} />
+                          <div className="w-full max-w-[24px] bg-success-400 rounded-t-sm transition-all duration-500" style={{ height: `${Math.max((point.resolved / maxVal) * maxHeight, 2)}px` }} title={`${point.resolved} resolved`} />
                         </div>
                         <span className="text-[9px] text-neutral-400 mt-1">{point.date.split(' ')[1]}</span>
                       </div>
