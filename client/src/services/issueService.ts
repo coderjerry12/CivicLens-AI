@@ -1,6 +1,7 @@
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { generateTrackingId } from '@/utils/issueIdGenerator';
+import { createNotification } from './notificationService';
 import type { SubmissionData, IssueReport } from '@/types/issue';
 
 export interface SubmitIssueOptions {
@@ -67,6 +68,27 @@ export async function submitIssueReport(options: SubmitIssueOptions): Promise<Su
 
   try {
     await setDoc(doc(db, 'issues', documentId), report);
+
+    // Notify all authority users about the new issue
+    try {
+      const usersRef = collection(db, 'users');
+      const authoritiesQuery = query(usersRef, where('role', '==', 'authority'));
+      const authoritiesSnap = await getDocs(authoritiesQuery);
+      const notifyPromises = authoritiesSnap.docs.map((authorityDoc) =>
+        createNotification(
+          authorityDoc.id,
+          'new_issue',
+          'New Issue Reported',
+          `${userName} reported "${data.title}" (${data.category.replace('_', ' ')}) — ${data.severity} severity`,
+          documentId
+        )
+      );
+      await Promise.all(notifyPromises);
+    } catch (notifErr) {
+      // Don't fail submission if notification fails
+      console.warn('[IssueService] Authority notification failed:', notifErr);
+    }
+
     return { success: true, trackingId, documentId };
   } catch (error) {
     console.error('[IssueService] Submit failed:', error);

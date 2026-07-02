@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Bell, CheckCheck, AlertTriangle, MessageSquare, CheckCircle2, Users, ArrowRight } from 'lucide-react';
+import { Bell, CheckCheck, AlertTriangle, MessageSquare, CheckCircle2, Users, ArrowRight, PlusCircle } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/ui';
 import { EmptyState } from '@/components/shared';
 import { PageWrapper } from '@/components/layout';
@@ -14,6 +14,7 @@ const TYPE_CONFIG: Record<NotificationType, { icon: React.ElementType; color: st
   resolution: { icon: CheckCircle2, color: 'text-success-500 bg-success-50 dark:bg-success-500/20' },
   community_verification: { icon: Users, color: 'text-primary-500 bg-primary-50 dark:bg-primary-500/20' },
   new_comment: { icon: MessageSquare, color: 'text-accent-500 bg-accent-50 dark:bg-accent-500/20' },
+  new_issue: { icon: PlusCircle, color: 'text-danger-500 bg-danger-50 dark:bg-danger-500/20' },
 };
 
 export default function NotificationsPage() {

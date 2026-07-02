@@ -66,7 +66,8 @@ export type NotificationType =
   | 'authority_comment'
   | 'resolution'
   | 'community_verification'
-  | 'new_comment';
+  | 'new_comment'
+  | 'new_issue';
 
 export interface AppNotification {
   id: string;
