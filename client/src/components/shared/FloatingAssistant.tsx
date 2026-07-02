@@ -1,18 +1,28 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Send, Sparkles } from 'lucide-react';
 import { useAIAssistant } from '@/hooks/useAIAssistant';
+import { useAuth } from '@/features/auth';
 import { cn } from '@/lib/utils';
 
-const QUICK_SUGGESTIONS = [
+const CITIZEN_SUGGESTIONS = [
   'How many issues have I reported?',
   'What categories can I report?',
   'How to track my issue?',
   'What is my community impact?',
 ];
 
+const AUTHORITY_SUGGESTIONS = [
+  'How many issues are pending?',
+  'Show resolution statistics',
+  'Which department has most issues?',
+  'What are critical priority issues?',
+];
+
 export function FloatingAssistant() {
   const { messages, isOpen, isTyping, sendMessage, toggle, close } = useAIAssistant();
+  const { user } = useAuth();
   const [input, setInput] = useState('');
+  const suggestions = user?.role === 'authority' ? AUTHORITY_SUGGESTIONS : CITIZEN_SUGGESTIONS;
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,7 +98,7 @@ export function FloatingAssistant() {
           {messages.length <= 2 && !isTyping && (
             <div className="px-3 py-2 border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900">
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {QUICK_SUGGESTIONS.map((suggestion, idx) => (
+                {suggestions.map((suggestion, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSend(suggestion)}
